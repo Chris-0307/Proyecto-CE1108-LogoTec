@@ -112,6 +112,16 @@ public interface SimpleListener extends ParseTreeListener {
 	 */
 	void exitSumaExpr(SimpleParser.SumaExprContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link SimpleParser#productoExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterProductoExpr(SimpleParser.ProductoExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SimpleParser#productoExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitProductoExpr(SimpleParser.ProductoExprContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link SimpleParser#divisionExpr}.
 	 * @param ctx the parse tree
 	 */

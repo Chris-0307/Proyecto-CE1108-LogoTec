@@ -140,6 +140,18 @@ public class SimpleBaseListener implements SimpleListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterProductoExpr(SimpleParser.ProductoExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitProductoExpr(SimpleParser.ProductoExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterDivisionExpr(SimpleParser.DivisionExprContext ctx) { }
 	/**
 	 * {@inheritDoc}

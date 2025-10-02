@@ -158,15 +158,32 @@ expression
 returns [ASTNode node]
     :   sumaExpr                        { $node = $sumaExpr.node; }
     |   divisionExpr                    { $node = $divisionExpr.node; }
+    |   productoExpr                    { $node = $productoExpr.node; }
     |   a=addExpr                       { $node = $a.node; }
         ( EQ b=addExpr                  { $node = new Equal($node, $b.node); } )*
     ;
+
 
 // forma: suma 1 2 3 ...
 sumaExpr
 returns [ASTNode node]
     :   SUMA exprList                   { $node = new Suma($exprList.list); }
     ;
+
+
+productoExpr
+returns [ASTNode node]
+@init { java.util.List<ASTNode> nodes = new java.util.ArrayList<>(); }
+    :   PRODUCTO e1=addExpr
+        (e2=addExpr { nodes.add($e2.node); })*
+      {
+        nodes.add(0, $e1.node);       
+        $node = new Producto(nodes);  
+      }
+    ;
+
+
+
 
 
 // forma: división N1 N2
@@ -201,7 +218,10 @@ returns [ASTNode node]
     |   BOOLEAN                         { $node = new Constant(Boolean.parseBoolean($BOOLEAN.text)); }
     |   ID                              { $node = new VarRef($ID.text); }
     |   PAR_OPEN expression PAR_CLOSE   { $node = $expression.node; }
+    |   productoExpr                     { $node = $productoExpr.node; }  // <--- aquí
+    |   divisionExpr                     { $node = $divisionExpr.node; }  // opcional si quieres usar división funcional dentro de sumas
     ;
+
 
 // ======= Utilitarios =======
 
@@ -234,8 +254,9 @@ DIV: '/';               // para la forma infija
 
 PLUS: '+';
 MINUS: '-';
-MULT: '*';
 AT: '@';
+PRODUCTO: 'producto';
+MULT: '*'; // ya estaba para la forma infija
 
 EQ: '==';
 ASSIGN: '=';
