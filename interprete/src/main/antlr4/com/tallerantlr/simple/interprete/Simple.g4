@@ -1,7 +1,5 @@
 grammar Simple;
 
-
-
 @lexer::members {
     @Override
     public org.antlr.v4.runtime.Token emit() {
@@ -12,50 +10,43 @@ grammar Simple;
     }
 }
 
-
 @parser::header{
     import java.util.*;
     import com.tallerantlr.simple.interprete.ast.*;
 }
 
 @parser::members {
-    // Variables y procedimientos globales del programa
     Map<String, Object> globals = new HashMap<>();
-    // firma = nombre + '#' + aridad (p.ej., "cuadrado#0", "mueve#2")
     Map<String, ProcedureDef> procTable = new HashMap<>();
-    // Para contar declaraciones de variables (requisito: al menos una)
     int varDeclCount = 0;
 
     static String sig(String name, int arity) { return name + "#" + arity; }
 }
 
 // ======= Reglas de alto nivel =======
-
-// Un programa es: (procedimientos o sentencias) separados por EOL (newline) o ';'
 program
 returns [List<ASTNode> body]
 @init { $body = new ArrayList<>(); }
-    :   (EOL)*                                                   // <<< acepta líneas en blanco al inicio
+    :   (EOL)* 
         (   (p=procedureDef)
           | (s=statement { if ($s.node != null) $body.add($s.node); })
         )
-        (   (SEP | EOL)+                                         // <<< uno o más separadores entre elementos
+        (   (SEP | EOL)+
             (   (p2=procedureDef)
               | (s2=statement { if ($s2.node != null) $body.add($s2.node); })
             )
         )*
-        (SEP | EOL)*                                             // <<< separadores finales opcionales
+        (SEP | EOL)*
         EOF
       {
         if (varDeclCount == 0) {
-            throw new RuntimeException("Error: el programa debe declarar al menos una variable (regla del enunciado).");
+            throw new RuntimeException("Error: el programa debe declarar al menos una variable.");
         }
         for (ASTNode n : $body) n.execute(globals);
       }
     ;
 
 // ======= Sentencias =======
-
 statement
 returns [ASTNode node]
     :   printlnStmt     { $node = $printlnStmt.node; }
@@ -64,14 +55,12 @@ returns [ASTNode node]
     |   procCallStmt    { $node = $procCallStmt.node; }
     ;
 
-// println( expr )
 printlnStmt
 returns [ASTNode node]
-    :   PRINTLN PAR_OPEN expression PAR_CLOSE (SEP)?
+    :   PRINTLN PAR_OPEN expression PAR_CLOSE (SEP)? 
         { $node = new Println($expression.node); }
     ;
 
-// var x = expr   |   var x
 varDecl
 returns [ASTNode node]
     :   VAR id=ID (ASSIGN e=expression)? (SEP)?
@@ -82,14 +71,12 @@ returns [ASTNode node]
         }
     ;
 
-// x = expr
 varAssign
 returns [ASTNode node]
     :   id=ID ASSIGN e=expression (SEP)?
         { $node = new VarAssign($id.text, $e.node); }
     ;
 
-// Llamada de procedimiento como sentencia:  nombre  |  nombre(arg1, arg2, ...)
 procCallStmt
 returns [ASTNode node]
 @init {
@@ -98,19 +85,14 @@ returns [ASTNode node]
 }
     :   id=ID
         (
-            // con paréntesis y argumentos
             PAR_OPEN a=argList PAR_CLOSE
             {
                 argNodes = $a.list;
                 arity = argNodes.size();
             }
           |
-            // sin paréntesis ni argumentos
-            /* vacío */
-            {
-                argNodes = new java.util.ArrayList<>();
-                arity = 0;
-            }
+            /* sin argumentos */
+            { argNodes = new java.util.ArrayList<>(); arity = 0; }
         )
         (SEP)?
         {
@@ -124,29 +106,17 @@ returns [ASTNode node]
     ;
 
 // ======= Procedimientos =======
-
-// para nombre [param1, param2, ...]
-//   (sentencias)
-// fin
 procedureDef
 returns [java.util.List<String> formalParams]
 @init {
     java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
-    $formalParams = new java.util.ArrayList<String>(); // default: sin parámetros
+    $formalParams = new java.util.ArrayList<String>();
 }
     :   PARA name=ID
         (
-            // Alternativa 1: con parámetros [ ... ]
-            p=optParams (EOL)*
-            {
-                $formalParams = $p.ids; // lista ya inicializada por optParams
-            }
+            p=optParams (EOL)* { $formalParams = $p.ids; }
           |
-            // Alternativa 2: sin parámetros
-            (EOL)*
-            {
-                $formalParams = new java.util.ArrayList<String>();
-            }
+            (EOL)* { $formalParams = new java.util.ArrayList<String>(); }
         )
         ( s=statement { if ($s.node != null) body.add($s.node); } (EOL)* )*
         FIN (SEP|EOL)*
@@ -160,7 +130,6 @@ returns [java.util.List<String> formalParams]
         }
     ;
 
-
 optParams
 returns [java.util.List<String> ids]
 @init { $ids = new java.util.ArrayList<String>(); }
@@ -171,9 +140,7 @@ returns [java.util.List<String> ids]
         RBRACK
     ;
 
-
-// ======= Expresiones (reuso tus nodos) =======
-
+// ======= Expresiones =======
 expression
 returns [ASTNode node]
     :   a=addExpr                       { $node = $a.node; }
@@ -184,7 +151,7 @@ addExpr
 returns [ASTNode node]
     :   t1=multExpr                     { $node = $t1.node; }
         ( PLUS t2=multExpr              { $node = new Addition($node, $t2.node); }
-        | AT   t3=multExpr              { $node = new Sumaplicacion($node, $t3.node); } // si ya lo tienes
+        | AT   t3=multExpr              { $node = new Sumaplicacion($node, $t3.node); }
         )*
     ;
 
@@ -196,17 +163,32 @@ returns [ASTNode node]
         )*
     ;
 
+// ======== Operaciones nuevas ========
 term
 returns [ASTNode node]
     :   NUMBER                          { $node = new Constant(Integer.parseInt($NUMBER.text)); }
     |   BOOLEAN                         { $node = new Constant(Boolean.parseBoolean($BOOLEAN.text)); }
     |   ID                              { $node = new VarRef($ID.text); }
     |   PAR_OPEN expression PAR_CLOSE   { $node = $expression.node; }
+
+    |   'Y' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
+        { $node = new And($e1.node, $e2.node); }
+    |   'O' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
+        { $node = new Or($e1.node, $e2.node); }
+    |   'Potencia' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
+        { $node = new Potencia($e1.node, $e2.node); }
+    |   'Diferencia' PAR_OPEN first=expression (COMMA rest=expression)* PAR_CLOSE
+        {
+            java.util.List<ASTNode> terms = new java.util.ArrayList<>();
+            terms.add($first.node);
+            if ($rest != null) {
+                for (expression r : $rest) terms.add(r.node);
+            }
+            $node = new Diferencia(terms);
+        }
     ;
 
 // ======= Utilitarios =======
-
-// Lista de argumentos de llamada
 argList
 returns [List<ASTNode> list]
 @init { $list = new ArrayList<>(); }
@@ -214,7 +196,7 @@ returns [List<ASTNode> list]
         ( COMMA en=expression { $list.add($en.node); } )*
     ;
 
-// Separador entre sentencias: ';' o fin de línea
+// ======= Tokens =======
 SEP : SEMICOLON ;
 EOL : NEWLINE ;
 
@@ -240,36 +222,29 @@ PAR_OPEN: '(';
 PAR_CLOSE: ')';
 SEMICOLON: ';';
 
-
 // --- Fragmentos ---
 fragment ID_START : [a-z];
 fragment ID_CHAR  : [a-zA-Z0-9_&@];
 
-// IDs válidos (<= 10)
+// IDs v�lidos (<= 10)
 ID
   : ID_START ID_CHAR*
     { getText().length() <= 10 }?
   ;
 
-// IDs inválidos (> 10) => conviértelos a token ERROR
+// IDs inv�lidos (> 10) => ERROR
 INVALID_ID
   : ID_START ID_CHAR*
     { getText().length() > 10 }?
     -> type(ERROR)
   ;
 
-
 NUMBER: [0-9]+;
 BOOLEAN: 'true' | 'false';
 
-// Comentario de línea (en canal oculto)
 COMMENT: '//' ~[\r\n]* -> channel(HIDDEN);
 
-// NEWLINE preservado para poder usarlo como separador de sentencia
 NEWLINE: '\r'? '\n';
-
-// Espacios/tabuladores ignorados
 WS: [ \t]+ -> skip;
-
 
 ERROR : . ;
