@@ -64,6 +64,7 @@ returns [ASTNode node]
     |   procCallStmt    { $node = $procCallStmt.node; }
     |   siStmt          { $node = $siStmt.node; }
     |   hazHastaStmt    { $node = $hazHastaStmt.node; }
+    |   hastaStmt       { $node = $hastaStmt.node; }
     ;
 
 // println( expr )
@@ -177,6 +178,29 @@ returns [ASTNode node]
         }
     ;
 
+// HASTA (condicion)
+// [ ...cuerpo... ]
+hastaStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
+}
+    :   HASTA
+        (SEP | EOL)*                         // separadores opcionales tras 'HASTA'
+        PAR_OPEN cond=expression PAR_CLOSE
+        (SEP | EOL)*
+        LBRACK
+            (SEP | EOL)*                     // líneas en blanco al inicio del bloque
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*                 // separadores tras cada sentencia
+            )*
+        RBRACK
+        (SEP)?
+        {
+            $node = new UntilStmt($cond.node, body);
+        }
+    ;
 
 
 
@@ -302,6 +326,7 @@ AT: '@';
 
 SI : 'SI' ;
 HAZHASTA : 'HAZ.HASTA' ;
+HASTA : 'HASTA' ;
 
 
 GT : '>' ;
