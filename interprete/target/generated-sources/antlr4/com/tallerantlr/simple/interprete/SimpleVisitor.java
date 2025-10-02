@@ -27,6 +27,126 @@ public interface SimpleVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatement(SimpleParser.StatementContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SimpleParser#repiteStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRepiteStmt(SimpleParser.RepiteStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#ejecutaStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEjecutaStmt(SimpleParser.EjecutaStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#esperaStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEsperaStmt(SimpleParser.EsperaStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#centroStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCentroStmt(SimpleParser.CentroStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#ponColorLapizStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPonColorLapizStmt(SimpleParser.PonColorLapizStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#subeLapizStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSubeLapizStmt(SimpleParser.SubeLapizStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#bajaLapizStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBajaLapizStmt(SimpleParser.BajaLapizStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#ponYStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPonYStmt(SimpleParser.PonYStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#ponXStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPonXStmt(SimpleParser.PonXStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#rumboStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRumboStmt(SimpleParser.RumboStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#ponRumboStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPonRumboStmt(SimpleParser.PonRumboStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#ponPosStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPonPosStmt(SimpleParser.PonPosStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#ocultaTortugaStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitOcultaTortugaStmt(SimpleParser.OcultaTortugaStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#giraIzquierdaStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGiraIzquierdaStmt(SimpleParser.GiraIzquierdaStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#giraDerechaStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGiraDerechaStmt(SimpleParser.GiraDerechaStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#retrocedeStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRetrocedeStmt(SimpleParser.RetrocedeStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#incStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIncStmt(SimpleParser.IncStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#avanzaStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAvanzaStmt(SimpleParser.AvanzaStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#inicStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitInicStmt(SimpleParser.InicStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#hazStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitHazStmt(SimpleParser.HazStmtContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SimpleParser#printlnStmt}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

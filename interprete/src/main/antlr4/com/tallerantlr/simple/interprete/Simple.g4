@@ -58,15 +58,155 @@ returns [List<ASTNode> body]
 
 statement
 returns [ASTNode node]
-    :   printlnStmt     { $node = $printlnStmt.node; }
-    |   varDecl         { $node = $varDecl.node; }
-    |   varAssign       { $node = $varAssign.node; }
-    |   procCallStmt    { $node = $procCallStmt.node; }
-    |   hazStmt         { $node = $hazStmt.node; }
-    |   inicStmt        { $node = $inicStmt.node; }
-    |   incStmt         { $node = $incStmt.node; }  
-    
+    :   printlnStmt         { $node = $printlnStmt.node; }
+    |   varDecl             { $node = $varDecl.node; }
+    |   varAssign           { $node = $varAssign.node; }
+    |   procCallStmt        { $node = $procCallStmt.node; }
+    |   hazStmt             { $node = $hazStmt.node; }
+    |   inicStmt            { $node = $inicStmt.node; }
+    |   incStmt             { $node = $incStmt.node; }
+    |   avanzaStmt          { $node = $avanzaStmt.node; }
+    |   retrocedeStmt       { $node = $retrocedeStmt.node; }
+    |   giraDerechaStmt     { $node = $giraDerechaStmt.node; }
+    |   giraIzquierdaStmt   { $node = $giraIzquierdaStmt.node; }
+    |   ocultaTortugaStmt   { $node = $ocultaTortugaStmt.node; }
+    |   ponPosStmt          { $node = $ponPosStmt.node; }
+    |   ponRumboStmt        { $node = $ponRumboStmt.node; }
+    |   rumboStmt           { $node = $rumboStmt.node; }
+    |   ponXStmt            { $node = $ponXStmt.node; }
+    |   ponYStmt            { $node = $ponYStmt.node; }
+    |   bajaLapizStmt       { $node = $bajaLapizStmt.node; }
+    |   subeLapizStmt       { $node = $subeLapizStmt.node; }
+    |   ponColorLapizStmt   { $node = $ponColorLapizStmt.node; }
+    |   centroStmt          { $node = $centroStmt.node; }
+    |   esperaStmt          { $node = $esperaStmt.node; }
+    |   ejecutaStmt         { $node = $ejecutaStmt.node; }
+    |   repiteStmt          { $node = $repiteStmt.node; }      // <-- NUEVO
     ;
+
+repiteStmt
+returns [ASTNode node]
+@init { java.util.List<ASTNode> body = new java.util.ArrayList<>(); }
+    :   REPITE n=expression
+        LBRACK
+            ( s=statement { if ($s.node != null) body.add($s.node); } )+
+        RBRACK
+        (SEP)?
+        { $node = new Repite($n.node, body); }
+    ;
+
+
+ejecutaStmt
+returns [ASTNode node]
+@init { java.util.List<ASTNode> list = new java.util.ArrayList<>(); }
+    :   EJECUTA LBRACK
+            ( s=statement { if ($s.node != null) list.add($s.node); } )+
+        RBRACK (SEP)?
+        { $node = new Ejecuta(list); }
+    ;
+    
+    
+esperaStmt
+returns [ASTNode node]
+    :   ESPERA e=expression (SEP)?
+        { $node = new Espera($e.node); }
+    ;
+    
+
+centroStmt
+returns [ASTNode node]
+    :   CENTRO (SEP)?
+        { $node = new Centro(); }
+    ;
+
+
+ponColorLapizStmt
+returns [ASTNode node]
+    :   (PONCOLORLAPIZ | PONCL) e=expression (SEP)?
+        { $node = new PonColorLapiz($e.node); }
+    ;
+
+
+subeLapizStmt
+returns [ASTNode node]
+    :   (SUBELAPIZ | SB) (SEP)?
+        { $node = new SubeLapiz(); }
+    ;
+
+
+bajaLapizStmt
+returns [ASTNode node]
+    :   (BAJALAPIZ | BL) (SEP)?
+        { $node = new BajaLapiz(); }
+    ;
+
+
+ponYStmt
+returns [ASTNode node]
+    :   PONY e=expression (SEP)?
+        { $node = new PonY($e.node); }
+    ;
+
+
+ponXStmt
+returns [ASTNode node]
+    :   PONX e=expression (SEP)?
+        { $node = new PonX($e.node); }
+    ;
+
+
+rumboStmt
+returns [ASTNode node]
+    :   RUMBO (SEP)?
+        { $node = new Rumbo(); }
+    ;
+
+
+ponRumboStmt
+returns [ASTNode node]
+    :   PONRUMBO e=expression (SEP)?
+        { $node = new PonRumbo($e.node); }
+    ;
+
+
+// PonPOS [ X Y ]
+// PonXY  X Y
+ponPosStmt
+returns [ASTNode node]
+    :   PONPOS LBRACK x=expression y=expression RBRACK (SEP)?
+        { $node = new PonPos($x.node, $y.node); }
+    |   PONXY  x=expression y=expression (SEP)?
+        { $node = new PonPos($x.node, $y.node); }
+    ;
+
+
+ocultaTortugaStmt
+returns [ASTNode node]
+    :   (OCULTATORTUGA | OT) (SEP)?
+        { $node = new OcultaTortuga(); }
+    ;
+
+
+giraIzquierdaStmt
+returns [ASTNode node]
+    :   (GIRAIZQUIERDA | GI) e=expression (SEP)?
+        { $node = new GiraIzquierda($e.node); }
+    ;
+
+
+giraDerechaStmt
+returns [ASTNode node]
+    :   (GIRADERECHA | GD) e=expression (SEP)?
+        { $node = new GiraDerecha($e.node); }
+    ;
+
+
+retrocedeStmt
+returns [ASTNode node]
+    :   (RETROCEDE | RE) e=expression (SEP)?
+        { $node = new Retrocede($e.node); }
+    ;
+
 
 incStmt
 returns [ASTNode node]
@@ -74,6 +214,13 @@ returns [ASTNode node]
         { $node = new Inc($n1.text, new Constant(1)); }            // inc [var]
     |   INC LBRACK n1=ID n2=expression RBRACK (SEP)?
         { $node = new Inc($n1.text, $n2.node); }                    // inc [var expr]
+    ;
+
+
+avanzaStmt
+returns [ASTNode node]
+    :   (AVANZA | AV) e=expression (SEP)?
+        { $node = new Avanza($e.node); }
     ;
 
 
@@ -269,6 +416,33 @@ HAZ: [Hh] 'az';
 INIC: 'inic';
 INC: [Ii][Nn][Cc];
 AZAR: [Aa][Zz][Aa][Rr];
+AVANZA: [Aa][Vv][Aa][Nn][Zz][Aa];
+AV:     [Aa][Vv];
+RETROCEDE: [Rr][Ee][Tt][Rr][Oo][Cc][Ee][Dd][Ee];
+RE:        [Rr][Ee];
+GIRADERECHA: [Gg][Ii][Rr][Aa][Dd][Ee][Rr][Ee][Cc][Hh][Aa];
+GD:          [Gg][Dd];
+GIRAIZQUIERDA: [Gg][Ii][Rr][Aa][Ii][Zz][Qq][Uu][Ii][Ee][Rr][Dd][Aa];
+GI:             [Gg][Ii];
+OCULTATORTUGA: [Oo][Cc][Uu][Ll][Tt][Aa][Tt][Oo][Rr][Tt][Uu][Gg][Aa];
+OT:             [Oo][Tt];
+PONPOS: [Pp][Oo][Nn][Pp][Oo][Ss];
+PONXY:  [Pp][Oo][Nn][Xx][Yy];
+PONRUMBO: [Pp][Oo][Nn][Rr][Uu][Mm][Bb][Oo];
+RUMBO: [Rr][Uu][Mm][Bb][Oo];
+PONX: [Pp][Oo][Nn][Xx];
+PONY: [Pp][Oo][Nn][Yy];
+BAJALAPIZ: [Bb][Aa][Jj][Aa][Ll][Aa][Pp][Ii][Zz];
+BL:        [Bb][Ll];
+SUBELAPIZ: [Ss][Uu][Bb][Ee][Ll][Aa][Pp][Ii][Zz];
+SB:        [Ss][Bb];
+PONCOLORLAPIZ: [Pp][Oo][Nn][Cc][Oo][Ll][Oo][Rr][Ll][Aa][Pp][Ii][Zz];
+PONCL:        [Pp][Oo][Nn][Cc][Ll];
+CENTRO: [Cc][Ee][Nn][Tt][Rr][Oo];
+ESPERA: [Ee][Ss][Pp][Ee][Rr][Aa];
+EJECUTA: [Ee][Jj][Ee][Cc][Uu][Tt][Aa];
+REPITE: [Rr][Ee][Pp][Ii][Tt][Ee];
+
 
 
 
