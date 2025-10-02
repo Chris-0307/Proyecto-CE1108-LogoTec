@@ -157,6 +157,7 @@ returns [java.util.List<String> ids]
 expression
 returns [ASTNode node]
     :   sumaExpr                        { $node = $sumaExpr.node; }
+    |   divisionExpr                    { $node = $divisionExpr.node; }
     |   a=addExpr                       { $node = $a.node; }
         ( EQ b=addExpr                  { $node = new Equal($node, $b.node); } )*
     ;
@@ -166,6 +167,16 @@ sumaExpr
 returns [ASTNode node]
     :   SUMA exprList                   { $node = new Suma($exprList.list); }
     ;
+
+
+// forma: división N1 N2
+divisionExpr
+returns [ASTNode node]
+    :   DIVISION e1=addExpr e2=addExpr
+        { $node = new Division($e1.node, $e2.node); }
+    ;
+
+
 
 addExpr
 returns [ASTNode node]
@@ -179,7 +190,8 @@ multExpr
 returns [ASTNode node]
     :   t1=term                         { $node = $t1.node; }
         ( MULT t2=term                  { $node = new Multiplication($node, $t2.node); }
-        | PERM t3=term                  { $node = new Permutation($node, $t3.node); }
+        | DIV  t3=term                  { $node = new Division($node, $t3.node); }   // <--- nueva línea
+        | PERM t4=term                  { $node = new Permutation($node, $t4.node); }
         )*
     ;
 
@@ -217,6 +229,8 @@ FIN:  'fin';
 VAR:  'var';
 PRINTLN: 'println';
 SUMA: 'suma';
+DIVISION: 'división';   // para la forma funcional
+DIV: '/';               // para la forma infija
 
 PLUS: '+';
 MINUS: '-';

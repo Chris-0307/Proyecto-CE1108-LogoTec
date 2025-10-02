@@ -75,6 +75,12 @@ public interface SimpleVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSumaExpr(SimpleParser.SumaExprContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SimpleParser#divisionExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDivisionExpr(SimpleParser.DivisionExprContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SimpleParser#addExpr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

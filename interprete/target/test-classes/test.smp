@@ -1,61 +1,13 @@
 // Demo Logo-lite “grande”: procedimientos, params, llamadas y estado
 
-var g = 10    
-var tmp = 0
+var a = 12 / 4;
+println(a);        // imprime 3
 
-// --- Procedimientos básicos ---
+var b = 20 / 6;
+println(b);        // imprime 3 (división entera)
 
-para saludo
-  println(100)      
-  println(g)        
-fin
 
-para add2 [x, y]
-  println(x + y)
-fin
+var c = división 12 4;
+println(c);        // imprime 3
 
-// Simulan “dibujos” (solo prints por ahora)
-para cuadrado
-  println(1)       
-  println(2)        
-  println(3)        
-  println(4)        
-fin
-
-para techo
-  println(900)      
-  println(901)      
-  println(902)     
-fin
-
-para casa
-  cuadrado          
-  println(800)      
-  techo
-fin
-
-// Sombra de variable global: el parámetro 'g' oculta a la global dentro del proc
-para usaGlobal [g]
-  println(g)       
-  println(g + 1)
-fin
-
-// Modificar globales desde un procedimiento (propagación activada en ProcedureDef)
-para setg [v]
-  g = v             
-  println(g)       
-fin
-
-// --- Sentencias top-level (mezcla de ; y saltos de línea) ---
-
-println(g)         
-saludo              
-add2(7, 8)         
-
-casa                 
-
-usaGlobal(99) 
-println(g)           
-
-setg(42)
-println(g)
+println(división 59 6); // imprime 3 (división entera)
