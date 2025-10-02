@@ -66,6 +66,7 @@ returns [ASTNode node]
     |   hazHastaStmt    { $node = $hazHastaStmt.node; }
     |   hastaStmt       { $node = $hastaStmt.node; }
     |   hazMientrasStmt { $node = $hazMientrasStmt.node; }
+    |   mientrasStmt    { $node = $mientrasStmt.node; }
     ;
 
 // println( expr )
@@ -228,6 +229,29 @@ returns [ASTNode node]
         }
     ;
     
+// MIENTRAS (condicion)
+// [ ...cuerpo... ]
+mientrasStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
+}
+    :   MIENTRAS
+        (SEP | EOL)*                         // separadores tras 'MIENTRAS'
+        PAR_OPEN cond=expression PAR_CLOSE
+        (SEP | EOL)*
+        LBRACK
+            (SEP | EOL)*                     // líneas en blanco al inicio del bloque
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*                 // separadores tras cada sentencia
+            )*
+        RBRACK
+        (SEP)?
+        {
+            $node = new WhileStmt($cond.node, body);
+        }
+    ;
 
 
 // ======= Procedimientos =======
@@ -356,7 +380,7 @@ HAZHASTA : 'HAZ.HASTA' ;
 HASTA : 'HASTA' ;
 
 HAZMIENTRAS : 'HAZ.MIENTRAS' ;
-
+MIENTRAS : 'MIENTRAS' ;
 
 GT : '>' ;
 LT : '<' ;
