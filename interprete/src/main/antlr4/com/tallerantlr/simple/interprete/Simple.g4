@@ -62,6 +62,7 @@ returns [ASTNode node]
     |   varDecl         { $node = $varDecl.node; }
     |   varAssign       { $node = $varAssign.node; }
     |   procCallStmt    { $node = $procCallStmt.node; }
+    |   siStmt          { $node = $siStmt.node; }
     ;
 
 // println( expr )
@@ -123,6 +124,34 @@ returns [ASTNode node]
         }
     ;
 
+// Condicional:
+// SI (cond) [ ...then... ] [ ...else... ]
+siStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> thenBody = new java.util.ArrayList<ASTNode>();
+    java.util.List<ASTNode> elseBody = new java.util.ArrayList<ASTNode>();
+    boolean hasElse = false;
+}
+    :   SI PAR_OPEN cond=expression PAR_CLOSE
+        LBRACK
+            ( s1=statement { if ($s1.node != null) thenBody.add($s1.node); } (SEP | EOL)* )*
+        RBRACK
+        ( (SEP | EOL)*                                   // separadores opcionales entre bloques
+          LBRACK
+            ( s2=statement { if ($s2.node != null) elseBody.add($s2.node); } (SEP | EOL)* )*
+          RBRACK
+          { hasElse = true; }
+        )?
+        (SEP)?
+        {
+            $node = hasElse
+                ? new IfElseStmt($cond.node, thenBody, elseBody)
+                : new IfStmt($cond.node, thenBody);
+        }
+    ;
+
+
 // ======= Procedimientos =======
 
 // para nombre [param1, param2, ...]
@@ -176,8 +205,16 @@ returns [java.util.List<String> ids]
 
 expression
 returns [ASTNode node]
-    :   a=addExpr                       { $node = $a.node; }
-        ( EQ b=addExpr                  { $node = new Equal($node, $b.node); } )*
+    :   left=relExpr                     { $node = $left.node; }
+        ( EQ right=relExpr               { $node = new Equal($node, $right.node); } )*
+    ;
+
+relExpr
+returns [ASTNode node]
+    :   a=addExpr                        { $node = $a.node; }
+        (   GT b=addExpr                 { $node = new GreaterThan($node, $b.node); }
+        |   LT b=addExpr                 { $node = new LessThan($node, $b.node); }
+        )*
     ;
 
 addExpr
@@ -202,6 +239,11 @@ returns [ASTNode node]
     |   BOOLEAN                         { $node = new Constant(Boolean.parseBoolean($BOOLEAN.text)); }
     |   ID                              { $node = new VarRef($ID.text); }
     |   PAR_OPEN expression PAR_CLOSE   { $node = $expression.node; }
+    
+    // --- Formas prefijas mayorque?/menorque?
+    |   MAYORQUEQ a=addExpr b=addExpr   { $node = new GreaterThan($a.node, $b.node); }
+    |   MENORQUEQ a=addExpr b=addExpr   { $node = new LessThan($a.node, $b.node); }
+    
     ;
 
 // ======= Utilitarios =======
@@ -228,6 +270,15 @@ MINUS: '-';
 MULT: '*';
 DIV: '/';
 AT: '@';
+
+
+SI : 'SI' ;
+
+GT : '>' ;
+LT : '<' ;
+MAYORQUEQ : 'mayorque?' | 'MayorQue?' ;
+MENORQUEQ : 'menorque?' | 'MenorQue?' ;
+
 
 EQ: '==';
 ASSIGN: '=';
