@@ -62,7 +62,36 @@ returns [ASTNode node]
     |   varDecl         { $node = $varDecl.node; }
     |   varAssign       { $node = $varAssign.node; }
     |   procCallStmt    { $node = $procCallStmt.node; }
+    |   hazStmt         { $node = $hazStmt.node; }
+    |   inicStmt        { $node = $inicStmt.node; }
+    |   incStmt         { $node = $incStmt.node; }  
+    
     ;
+
+incStmt
+returns [ASTNode node]
+    :   INC LBRACK n1=ID RBRACK (SEP)?
+        { $node = new Inc($n1.text, new Constant(1)); }            // inc [var]
+    |   INC LBRACK n1=ID n2=expression RBRACK (SEP)?
+        { $node = new Inc($n1.text, $n2.node); }                    // inc [var expr]
+    ;
+
+
+
+inicStmt
+returns [ASTNode node]
+    :   INIC id=ID ASSIGN v=expression (SEP)?
+        { $node = new InicAssign($id.text, $v.node); }
+    ;
+
+
+hazStmt
+returns [ASTNode node]
+    :   HAZ id=ID v=expression (SEP)?
+        { $node = new HazAssign($id.text, $v.node); }
+    ;
+
+
 
 // println( expr )
 printlnStmt
@@ -74,13 +103,18 @@ returns [ASTNode node]
 // var x = expr   |   var x
 varDecl
 returns [ASTNode node]
-    :   VAR id=ID (ASSIGN e=expression)? (SEP)?
+    :   VAR id=ID ASSIGN e=expression (SEP)?
         {
             varDeclCount++;
-            if ($e.node != null) $node = new VarAssign($id.text, $e.node);
-            else                 $node = new VarDecl($id.text);
+            $node = new VarAssign($id.text, $e.node);
+        }
+    |   VAR id=ID (SEP)?
+        {
+            varDeclCount++;
+            $node = new VarDecl($id.text);
         }
     ;
+
 
 // x = expr
 varAssign
@@ -198,11 +232,20 @@ returns [ASTNode node]
 
 term
 returns [ASTNode node]
-    :   NUMBER                          { $node = new Constant(Integer.parseInt($NUMBER.text)); }
-    |   BOOLEAN                         { $node = new Constant(Boolean.parseBoolean($BOOLEAN.text)); }
-    |   ID                              { $node = new VarRef($ID.text); }
-    |   PAR_OPEN expression PAR_CLOSE   { $node = $expression.node; }
+    :   NUMBER  { $node = new Constant(Integer.parseInt($NUMBER.text)); }
+    |   BOOLEAN { $node = new Constant(Boolean.parseBoolean($BOOLEAN.text.toLowerCase())); }
+    |   STRING  {
+                  String txt = $STRING.text;
+                  String content = txt.substring(1, txt.length()-1).replace("\\\"", "\"");
+                  $node = new Constant(content);
+                }
+    |   ID      { $node = new VarRef($ID.text); }
+    |   PAR_OPEN expression PAR_CLOSE  { $node = $expression.node; }
+    |   IGUALESQ e1=expression e2=expression { $node = new Equal($e1.node, $e2.node); }
+    |   AZAR e=expression              { $node = new Azar($e.node); }       // <-- NUEVO
     ;
+
+
 
 // ======= Utilitarios =======
 
@@ -222,6 +265,17 @@ PARA: 'para';
 FIN:  'fin';
 VAR:  'var';
 PRINTLN: 'println';
+HAZ: [Hh] 'az';  
+INIC: 'inic';
+INC: [Ii][Nn][Cc];
+AZAR: [Aa][Zz][Aa][Rr];
+
+
+
+
+STRING
+  : '"' ( '\\"' | ~["\r\n] )* '"'   // cadena con \" escapado
+  ;
 
 PLUS: '+';
 MINUS: '-';
@@ -229,6 +283,7 @@ MULT: '*';
 DIV: '/';
 AT: '@';
 
+IGUALESQ: [Ii][Gg][Uu][Aa][Ll][Ee][Ss]'?';
 EQ: '==';
 ASSIGN: '=';
 
@@ -260,7 +315,7 @@ INVALID_ID
 
 
 NUMBER: [0-9]+;
-BOOLEAN: 'true' | 'false';
+BOOLEAN: [Tt][Rr][Uu][Ee] | [Ff][Aa][Ll][Ss][Ee];
 
 // Comentario de línea (en canal oculto)
 COMMENT: '//' ~[\r\n]* -> channel(HIDDEN);
