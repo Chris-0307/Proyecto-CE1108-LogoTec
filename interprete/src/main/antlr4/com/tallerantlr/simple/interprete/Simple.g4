@@ -65,6 +65,7 @@ returns [ASTNode node]
     |   siStmt          { $node = $siStmt.node; }
     |   hazHastaStmt    { $node = $hazHastaStmt.node; }
     |   hastaStmt       { $node = $hastaStmt.node; }
+    |   hazMientrasStmt { $node = $hazMientrasStmt.node; }
     ;
 
 // println( expr )
@@ -202,6 +203,31 @@ returns [ASTNode node]
         }
     ;
 
+// HAZ.MIENTRAS
+//   [ ...cuerpo... ]
+// ( condicion )   // debe evaluar a Boolean
+hazMientrasStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
+}
+    :   HAZMIENTRAS
+        (SEP | EOL)*                     // permite saltos después de HAZ.MIENTRAS
+        LBRACK
+            (SEP | EOL)*                 // líneas en blanco al inicio del bloque
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*             // separadores tras cada sentencia
+            )*
+        RBRACK
+        (SEP | EOL)*                     // separadores entre bloque y condición
+        PAR_OPEN cond=expression PAR_CLOSE
+        (SEP)?
+        {
+            $node = new DoWhileStmt($cond.node, body);
+        }
+    ;
+    
 
 
 // ======= Procedimientos =======
@@ -325,8 +351,11 @@ AT: '@';
 
 
 SI : 'SI' ;
+
 HAZHASTA : 'HAZ.HASTA' ;
 HASTA : 'HASTA' ;
+
+HAZMIENTRAS : 'HAZ.MIENTRAS' ;
 
 
 GT : '>' ;
