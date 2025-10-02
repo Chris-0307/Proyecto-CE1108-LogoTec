@@ -69,6 +69,12 @@ public interface SimpleVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpression(SimpleParser.ExpressionContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SimpleParser#sumaExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSumaExpr(SimpleParser.SumaExprContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SimpleParser#addExpr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -86,6 +92,12 @@ public interface SimpleVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTerm(SimpleParser.TermContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#exprList}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprList(SimpleParser.ExprListContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SimpleParser#argList}.
 	 * @param ctx the parse tree
