@@ -1,61 +1,68 @@
-// Demo Logo-lite “grande”: procedimientos, params, llamadas y estado
+// Demo general de Logo-lite: nuevas instrucciones + stubs de tortuga
 
-var g = 10    
-var tmp = 0
+// --- variables básicas ---
+var a
+var b
+var n
+Haz a 10
+Haz b 3
+Haz n 2
 
-// --- Procedimientos básicos ---
+// --- color y pluma ---
+println( "== color y pluma ==" )
+PonCL "azul"
+BL
+SB
+BL   // idempotente: si ya está abajo, se avisa
 
-para saludo
-  println(100)      
-  println(g)        
+// --- posicionamiento y rumbo ---
+println( "== posicionamiento y rumbo ==" )
+PonXY 0 0
+PonPOS [ 100 50 ]
+PonX (a + 10)      // usa expresión
+PonY 25
+PonRumbo 90
+Rumbo
+
+// --- movimientos básicos (stubs) ---
+println( "== movimiento ==" )
+AV 10
+GD 90
+RE 5
+GI 45
+
+// --- centro y espera ---
+println( "== centro y espera ==" )
+centro
+espera 10          // ~10/60 s
+
+// --- ejecuta y repite ---
+println( "== ejecuta y repite ==" )
+Ejecuta [ AV 10 GD 90 AV 5 ]
+Repite 3 [ AV 3; GI 30; PonX 100 ]
+
+// --- procedimientos combinando varias cosas ---
+para cuadrito
+  BL
+  Repite 4 [ AV 10 GD 90 ]
+  SB
 fin
 
-para add2 [x, y]
-  println(x + y)
+para combo [k]
+  println( "== dentro de combo ==" )
+  PonCL "rojo"
+  INC [a k]
+  println(a)
+  Ejecuta [ AV 5 GD 45 AV 5 ]
 fin
 
-// Simulan “dibujos” (solo prints por ahora)
-para cuadrado
-  println(1)       
-  println(2)        
-  println(3)        
-  println(4)        
-fin
+cuadrito
+combo(2)
 
-para techo
-  println(900)      
-  println(901)      
-  println(902)     
-fin
-
-para casa
-  cuadrado          
-  println(800)      
-  techo
-fin
-
-// Sombra de variable global: el parámetro 'g' oculta a la global dentro del proc
-para usaGlobal [g]
-  println(g)       
-  println(g + 1)
-fin
-
-// Modificar globales desde un procedimiento (propagación activada en ProcedureDef)
-para setg [v]
-  g = v             
-  println(g)       
-fin
-
-// --- Sentencias top-level (mezcla de ; y saltos de línea) ---
-
-println(g)         
-saludo              
-add2(7, 8)         
-
-casa                 
-
-usaGlobal(99) 
-println(g)           
-
-setg(42)
-println(g)
+// --- más pruebas cortas de alias ---
+println( "== alias rápidos ==" )
+av 3
+gd 15
+re 2
+gi 15
+ot
