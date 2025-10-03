@@ -489,33 +489,54 @@ returns [ASTNode node]
 // ======== Operaciones nuevas ========
 term
 returns [ASTNode node]
+    :   NUMBER
+          { $node = new Constant(Integer.parseInt($NUMBER.text)); }
 
-    :   NUMBER                          { $node = new Constant(Integer.parseInt($NUMBER.text)); }
-    |   BOOLEAN                         { $node = new Constant(Boolean.parseBoolean($BOOLEAN.text)); }
-    |   ID                              { $node = new VarRef($ID.text); }
-    |   PAR_OPEN expression PAR_CLOSE   { $node = $expression.node; }
+    |   BOOLEAN
+          { $node = new Constant(Boolean.parseBoolean($BOOLEAN.text.toLowerCase())); }
 
+    |   STRING
+          {
+            String txt = $STRING.text;
+            String content = txt.substring(1, txt.length()-1).replace("\\\"", "\"");
+            $node = new Constant(content);
+          }
+
+    |   ID
+          { $node = new VarRef($ID.text); }
+
+    |   PAR_OPEN expression PAR_CLOSE
+          { $node = $expression.node; }
+
+    // Funciones/operadores “palabra ( … )”
     |   'Y' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
-        { $node = new And($e1.node, $e2.node); }
+          { $node = new And($e1.node, $e2.node); }
+
     |   'O' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
-        { $node = new Or($e1.node, $e2.node); }
+          { $node = new Or($e1.node, $e2.node); }
+
     |   'Potencia' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
-        { $node = new Potencia($e1.node, $e2.node); }
-    |   'Diferencia' PAR_OPEN first=expression (COMMA rest=expression)* PAR_CLOSE
-        {
+          { $node = new Potencia($e1.node, $e2.node); }
+
+    |   'Diferencia' PAR_OPEN first=expression (COMMA rest+=expression)* PAR_CLOSE
+          {
             java.util.List<ASTNode> terms = new java.util.ArrayList<>();
             terms.add($first.node);
             if ($rest != null) {
-                for (expression r : $rest) terms.add(r.node);
+              for (SimpleParser.ExpressionContext r : $rest) terms.add(r.node);
             }
             $node = new Diferencia(terms);
-        }
-    |   MAYORQUEQ a=addExpr b=addExpr   { $node = new GreaterThan($a.node, $b.node); }
-    |   MENORQUEQ a=addExpr b=addExpr   { $node = new LessThan($a.node, $b.node); }
-    |   IGUALESQ e1=expression e2=expression { $node = new Equal($e1.node, $e2.node); }
-    |   AZAR e=expression              { $node = new Azar($e.node); }       // <-- NUEVO
+          }
 
+    // Palabras estilo operador infijo simple
+    |   MAYORQUEQ a=addExpr b=addExpr           { $node = new GreaterThan($a.node, $b.node); }
+    |   MENORQUEQ a=addExpr b=addExpr           { $node = new LessThan($a.node, $b.node); }
+    |   IGUALESQ  e1=expression e2=expression   { $node = new Equal($e1.node, $e2.node); }
+
+    // azar como función palabra
+    |   AZAR e=expression                       { $node = new Azar($e.node); }
     ;
+
 
 
 
