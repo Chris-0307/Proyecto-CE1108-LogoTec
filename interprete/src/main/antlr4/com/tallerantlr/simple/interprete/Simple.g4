@@ -49,12 +49,195 @@ returns [List<ASTNode> body]
 // ======= Sentencias =======
 statement
 returns [ASTNode node]
+
     :   printlnStmt     { $node = $printlnStmt.node; }
     |   varDecl         { $node = $varDecl.node; }
     |   varAssign       { $node = $varAssign.node; }
     |   procCallStmt    { $node = $procCallStmt.node; }
+    |   siStmt          { $node = $siStmt.node; }
+    |   hazHastaStmt    { $node = $hazHastaStmt.node; }
+    |   hastaStmt       { $node = $hastaStmt.node; }
+    |   hazMientrasStmt { $node = $hazMientrasStmt.node; }
+    |   mientrasStmt    { $node = $mientrasStmt.node; }
+    |   hazStmt             { $node = $hazStmt.node; }
+    |   inicStmt            { $node = $inicStmt.node; }
+    |   incStmt             { $node = $incStmt.node; }
+    |   avanzaStmt          { $node = $avanzaStmt.node; }
+    |   retrocedeStmt       { $node = $retrocedeStmt.node; }
+    |   giraDerechaStmt     { $node = $giraDerechaStmt.node; }
+    |   giraIzquierdaStmt   { $node = $giraIzquierdaStmt.node; }
+    |   ocultaTortugaStmt   { $node = $ocultaTortugaStmt.node; }
+    |   ponPosStmt          { $node = $ponPosStmt.node; }
+    |   ponRumboStmt        { $node = $ponRumboStmt.node; }
+    |   rumboStmt           { $node = $rumboStmt.node; }
+    |   ponXStmt            { $node = $ponXStmt.node; }
+    |   ponYStmt            { $node = $ponYStmt.node; }
+    |   bajaLapizStmt       { $node = $bajaLapizStmt.node; }
+    |   subeLapizStmt       { $node = $subeLapizStmt.node; }
+    |   ponColorLapizStmt   { $node = $ponColorLapizStmt.node; }
+    |   centroStmt          { $node = $centroStmt.node; }
+    |   esperaStmt          { $node = $esperaStmt.node; }
+    |   ejecutaStmt         { $node = $ejecutaStmt.node; }
+    |   repiteStmt          { $node = $repiteStmt.node; }     
     ;
 
+repiteStmt
+returns [ASTNode node]
+@init { java.util.List<ASTNode> body = new java.util.ArrayList<>(); }
+    :   REPITE n=expression
+        LBRACK
+            ( s=statement { if ($s.node != null) body.add($s.node); } )+
+        RBRACK
+        (SEP)?
+        { $node = new Repite($n.node, body); }
+    ;
+
+
+ejecutaStmt
+returns [ASTNode node]
+@init { java.util.List<ASTNode> list = new java.util.ArrayList<>(); }
+    :   EJECUTA LBRACK
+            ( s=statement { if ($s.node != null) list.add($s.node); } )+
+        RBRACK (SEP)?
+        { $node = new Ejecuta(list); }
+    ;
+    
+    
+esperaStmt
+returns [ASTNode node]
+    :   ESPERA e=expression (SEP)?
+        { $node = new Espera($e.node); }
+    ;
+    
+
+centroStmt
+returns [ASTNode node]
+    :   CENTRO (SEP)?
+        { $node = new Centro(); }
+    ;
+
+
+ponColorLapizStmt
+returns [ASTNode node]
+    :   (PONCOLORLAPIZ | PONCL) e=expression (SEP)?
+        { $node = new PonColorLapiz($e.node); }
+    ;
+
+
+subeLapizStmt
+returns [ASTNode node]
+    :   (SUBELAPIZ | SB) (SEP)?
+        { $node = new SubeLapiz(); }
+    ;
+
+
+bajaLapizStmt
+returns [ASTNode node]
+    :   (BAJALAPIZ | BL) (SEP)?
+        { $node = new BajaLapiz(); }
+    ;
+
+
+ponYStmt
+returns [ASTNode node]
+    :   PONY e=expression (SEP)?
+        { $node = new PonY($e.node); }
+    ;
+
+
+ponXStmt
+returns [ASTNode node]
+    :   PONX e=expression (SEP)?
+        { $node = new PonX($e.node); }
+    ;
+
+
+rumboStmt
+returns [ASTNode node]
+    :   RUMBO (SEP)?
+        { $node = new Rumbo(); }
+    ;
+
+
+ponRumboStmt
+returns [ASTNode node]
+    :   PONRUMBO e=expression (SEP)?
+        { $node = new PonRumbo($e.node); }
+    ;
+
+
+// PonPOS [ X Y ]
+// PonXY  X Y
+ponPosStmt
+returns [ASTNode node]
+    :   PONPOS LBRACK x=expression y=expression RBRACK (SEP)?
+        { $node = new PonPos($x.node, $y.node); }
+    |   PONXY  x=expression y=expression (SEP)?
+        { $node = new PonPos($x.node, $y.node); }
+    ;
+
+
+ocultaTortugaStmt
+returns [ASTNode node]
+    :   (OCULTATORTUGA | OT) (SEP)?
+        { $node = new OcultaTortuga(); }
+    ;
+
+
+giraIzquierdaStmt
+returns [ASTNode node]
+    :   (GIRAIZQUIERDA | GI) e=expression (SEP)?
+        { $node = new GiraIzquierda($e.node); }
+    ;
+
+
+giraDerechaStmt
+returns [ASTNode node]
+    :   (GIRADERECHA | GD) e=expression (SEP)?
+        { $node = new GiraDerecha($e.node); }
+    ;
+
+
+retrocedeStmt
+returns [ASTNode node]
+    :   (RETROCEDE | RE) e=expression (SEP)?
+        { $node = new Retrocede($e.node); }
+    ;
+
+
+incStmt
+returns [ASTNode node]
+    :   INC LBRACK n1=ID RBRACK (SEP)?
+        { $node = new Inc($n1.text, new Constant(1)); }            // inc [var]
+    |   INC LBRACK n1=ID n2=expression RBRACK (SEP)?
+        { $node = new Inc($n1.text, $n2.node); }                    // inc [var expr]
+    ;
+
+
+avanzaStmt
+returns [ASTNode node]
+    :   (AVANZA | AV) e=expression (SEP)?
+        { $node = new Avanza($e.node); }
+    ;
+
+
+
+inicStmt
+returns [ASTNode node]
+    :   INIC id=ID ASSIGN v=expression (SEP)?
+        { $node = new InicAssign($id.text, $v.node); }
+    ;
+
+
+hazStmt
+returns [ASTNode node]
+    :   HAZ id=ID v=expression (SEP)?
+        { $node = new HazAssign($id.text, $v.node); }
+    ;
+
+
+
+// println( expr )
 printlnStmt
 returns [ASTNode node]
     :   PRINTLN PAR_OPEN expression PAR_CLOSE (SEP)? 
@@ -63,14 +246,20 @@ returns [ASTNode node]
 
 varDecl
 returns [ASTNode node]
-    :   VAR id=ID (ASSIGN e=expression)? (SEP)?
+    :   VAR id=ID ASSIGN e=expression (SEP)?
         {
             varDeclCount++;
-            if ($e.node != null) $node = new VarAssign($id.text, $e.node);
-            else                 $node = new VarDecl($id.text);
+            $node = new VarAssign($id.text, $e.node);
+        }
+    |   VAR id=ID (SEP)?
+        {
+            varDeclCount++;
+            $node = new VarDecl($id.text);
         }
     ;
 
+
+// x = expr
 varAssign
 returns [ASTNode node]
     :   id=ID ASSIGN e=expression (SEP)?
@@ -104,6 +293,132 @@ returns [ASTNode node]
             $node = new ProcedureCall(def, argNodes);
         }
     ;
+
+// Condicional:
+// SI (cond) [ ...then... ] [ ...else... ]
+siStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> thenBody = new java.util.ArrayList<ASTNode>();
+    java.util.List<ASTNode> elseBody = new java.util.ArrayList<ASTNode>();
+    boolean hasElse = false;
+}
+    :   SI PAR_OPEN cond=expression PAR_CLOSE
+        LBRACK
+            ( s1=statement { if ($s1.node != null) thenBody.add($s1.node); } (SEP | EOL)* )*
+        RBRACK
+        ( (SEP | EOL)*                                   // separadores opcionales entre bloques
+          LBRACK
+            ( s2=statement { if ($s2.node != null) elseBody.add($s2.node); } (SEP | EOL)* )*
+          RBRACK
+          { hasElse = true; }
+        )?
+        (SEP)?
+        {
+            $node = hasElse
+                ? new IfElseStmt($cond.node, thenBody, elseBody)
+                : new IfStmt($cond.node, thenBody);
+        }
+    ;
+    
+// HAZ.HASTA
+//   [ ...cuerpo... ]
+// ( condicion )
+hazHastaStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
+}
+    :   HAZHASTA
+        (SEP | EOL)*                     // << permite salto(s) de línea después de HAZ.HASTA
+        LBRACK
+            (SEP | EOL)*                 // << permite líneas en blanco al inicio del bloque
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*             // separadores tras cada sentencia (incluye líneas en blanco)
+            )*
+        RBRACK
+        (SEP | EOL)*                     // separadores opcionales entre bloque y condición
+        PAR_OPEN cond=expression PAR_CLOSE
+        (SEP)?
+        {
+            $node = new DoUntilStmt($cond.node, body);
+        }
+    ;
+
+// HASTA (condicion)
+// [ ...cuerpo... ]
+hastaStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
+}
+    :   HASTA
+        (SEP | EOL)*                         // separadores opcionales tras 'HASTA'
+        PAR_OPEN cond=expression PAR_CLOSE
+        (SEP | EOL)*
+        LBRACK
+            (SEP | EOL)*                     // líneas en blanco al inicio del bloque
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*                 // separadores tras cada sentencia
+            )*
+        RBRACK
+        (SEP)?
+        {
+            $node = new UntilStmt($cond.node, body);
+        }
+    ;
+
+// HAZ.MIENTRAS
+//   [ ...cuerpo... ]
+// ( condicion )   // debe evaluar a Boolean
+hazMientrasStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
+}
+    :   HAZMIENTRAS
+        (SEP | EOL)*                     // permite saltos después de HAZ.MIENTRAS
+        LBRACK
+            (SEP | EOL)*                 // líneas en blanco al inicio del bloque
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*             // separadores tras cada sentencia
+            )*
+        RBRACK
+        (SEP | EOL)*                     // separadores entre bloque y condición
+        PAR_OPEN cond=expression PAR_CLOSE
+        (SEP)?
+        {
+            $node = new DoWhileStmt($cond.node, body);
+        }
+    ;
+    
+// MIENTRAS (condicion)
+// [ ...cuerpo... ]
+mientrasStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
+}
+    :   MIENTRAS
+        (SEP | EOL)*                         // separadores tras 'MIENTRAS'
+        PAR_OPEN cond=expression PAR_CLOSE
+        (SEP | EOL)*
+        LBRACK
+            (SEP | EOL)*                     // líneas en blanco al inicio del bloque
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*                 // separadores tras cada sentencia
+            )*
+        RBRACK
+        (SEP)?
+        {
+            $node = new WhileStmt($cond.node, body);
+        }
+    ;
+
 
 // ======= Procedimientos =======
 procedureDef
@@ -143,8 +458,16 @@ returns [java.util.List<String> ids]
 // ======= Expresiones =======
 expression
 returns [ASTNode node]
-    :   a=addExpr                       { $node = $a.node; }
-        ( EQ b=addExpr                  { $node = new Equal($node, $b.node); } )*
+    :   left=relExpr                     { $node = $left.node; }
+        ( EQ right=relExpr               { $node = new Equal($node, $right.node); } )*
+    ;
+
+relExpr
+returns [ASTNode node]
+    :   a=addExpr                        { $node = $a.node; }
+        (   GT b=addExpr                 { $node = new GreaterThan($node, $b.node); }
+        |   LT b=addExpr                 { $node = new LessThan($node, $b.node); }
+        )*
     ;
 
 addExpr
@@ -166,6 +489,7 @@ returns [ASTNode node]
 // ======== Operaciones nuevas ========
 term
 returns [ASTNode node]
+
     :   NUMBER                          { $node = new Constant(Integer.parseInt($NUMBER.text)); }
     |   BOOLEAN                         { $node = new Constant(Boolean.parseBoolean($BOOLEAN.text)); }
     |   ID                              { $node = new VarRef($ID.text); }
@@ -186,7 +510,14 @@ returns [ASTNode node]
             }
             $node = new Diferencia(terms);
         }
+    |   MAYORQUEQ a=addExpr b=addExpr   { $node = new GreaterThan($a.node, $b.node); }
+    |   MENORQUEQ a=addExpr b=addExpr   { $node = new LessThan($a.node, $b.node); }
+    |   IGUALESQ e1=expression e2=expression { $node = new Equal($e1.node, $e2.node); }
+    |   AZAR e=expression              { $node = new Azar($e.node); }       // <-- NUEVO
+
     ;
+
+
 
 // ======= Utilitarios =======
 argList
@@ -204,6 +535,44 @@ PARA: 'para';
 FIN:  'fin';
 VAR:  'var';
 PRINTLN: 'println';
+HAZ: [Hh] 'az';  
+INIC: 'inic';
+INC: [Ii][Nn][Cc];
+AZAR: [Aa][Zz][Aa][Rr];
+AVANZA: [Aa][Vv][Aa][Nn][Zz][Aa];
+AV:     [Aa][Vv];
+RETROCEDE: [Rr][Ee][Tt][Rr][Oo][Cc][Ee][Dd][Ee];
+RE:        [Rr][Ee];
+GIRADERECHA: [Gg][Ii][Rr][Aa][Dd][Ee][Rr][Ee][Cc][Hh][Aa];
+GD:          [Gg][Dd];
+GIRAIZQUIERDA: [Gg][Ii][Rr][Aa][Ii][Zz][Qq][Uu][Ii][Ee][Rr][Dd][Aa];
+GI:             [Gg][Ii];
+OCULTATORTUGA: [Oo][Cc][Uu][Ll][Tt][Aa][Tt][Oo][Rr][Tt][Uu][Gg][Aa];
+OT:             [Oo][Tt];
+PONPOS: [Pp][Oo][Nn][Pp][Oo][Ss];
+PONXY:  [Pp][Oo][Nn][Xx][Yy];
+PONRUMBO: [Pp][Oo][Nn][Rr][Uu][Mm][Bb][Oo];
+RUMBO: [Rr][Uu][Mm][Bb][Oo];
+PONX: [Pp][Oo][Nn][Xx];
+PONY: [Pp][Oo][Nn][Yy];
+BAJALAPIZ: [Bb][Aa][Jj][Aa][Ll][Aa][Pp][Ii][Zz];
+BL:        [Bb][Ll];
+SUBELAPIZ: [Ss][Uu][Bb][Ee][Ll][Aa][Pp][Ii][Zz];
+SB:        [Ss][Bb];
+PONCOLORLAPIZ: [Pp][Oo][Nn][Cc][Oo][Ll][Oo][Rr][Ll][Aa][Pp][Ii][Zz];
+PONCL:        [Pp][Oo][Nn][Cc][Ll];
+CENTRO: [Cc][Ee][Nn][Tt][Rr][Oo];
+ESPERA: [Ee][Ss][Pp][Ee][Rr][Aa];
+EJECUTA: [Ee][Jj][Ee][Cc][Uu][Tt][Aa];
+REPITE: [Rr][Ee][Pp][Ii][Tt][Ee];
+
+
+
+
+
+STRING
+  : '"' ( '\\"' | ~["\r\n] )* '"'   // cadena con \" escapado
+  ;
 
 PLUS: '+';
 MINUS: '-';
@@ -211,6 +580,22 @@ MULT: '*';
 DIV: '/';
 AT: '@';
 
+
+SI : 'SI' ;
+
+HAZHASTA : 'HAZ.HASTA' ;
+HASTA : 'HASTA' ;
+
+HAZMIENTRAS : 'HAZ.MIENTRAS' ;
+MIENTRAS : 'MIENTRAS' ;
+
+GT : '>' ;
+LT : '<' ;
+MAYORQUEQ : 'mayorque?' | 'MayorQue?' ;
+MENORQUEQ : 'menorque?' | 'MenorQue?' ;
+
+
+IGUALESQ: [Ii][Gg][Uu][Aa][Ll][Ee][Ss]'?';
 EQ: '==';
 ASSIGN: '=';
 
@@ -226,13 +611,13 @@ SEMICOLON: ';';
 fragment ID_START : [a-z];
 fragment ID_CHAR  : [a-zA-Z0-9_&@];
 
-// IDs v�lidos (<= 10)
+// IDs v�lidos (<= 10)
 ID
   : ID_START ID_CHAR*
     { getText().length() <= 10 }?
   ;
 
-// IDs inv�lidos (> 10) => ERROR
+// IDs inv�lidos (> 10) => ERROR
 INVALID_ID
   : ID_START ID_CHAR*
     { getText().length() > 10 }?
@@ -240,7 +625,7 @@ INVALID_ID
   ;
 
 NUMBER: [0-9]+;
-BOOLEAN: 'true' | 'false';
+BOOLEAN: [Tt][Rr][Uu][Ee] | [Ff][Aa][Ll][Ss][Ee];
 
 COMMENT: '//' ~[\r\n]* -> channel(HIDDEN);
 
