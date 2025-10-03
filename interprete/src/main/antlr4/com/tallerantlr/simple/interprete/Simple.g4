@@ -58,10 +58,16 @@ returns [List<ASTNode> body]
 
 statement
 returns [ASTNode node]
-    :   printlnStmt         { $node = $printlnStmt.node; }
-    |   varDecl             { $node = $varDecl.node; }
-    |   varAssign           { $node = $varAssign.node; }
-    |   procCallStmt        { $node = $procCallStmt.node; }
+
+    :   printlnStmt     { $node = $printlnStmt.node; }
+    |   varDecl         { $node = $varDecl.node; }
+    |   varAssign       { $node = $varAssign.node; }
+    |   procCallStmt    { $node = $procCallStmt.node; }
+    |   siStmt          { $node = $siStmt.node; }
+    |   hazHastaStmt    { $node = $hazHastaStmt.node; }
+    |   hastaStmt       { $node = $hastaStmt.node; }
+    |   hazMientrasStmt { $node = $hazMientrasStmt.node; }
+    |   mientrasStmt    { $node = $mientrasStmt.node; }
     |   hazStmt             { $node = $hazStmt.node; }
     |   inicStmt            { $node = $inicStmt.node; }
     |   incStmt             { $node = $incStmt.node; }
@@ -81,7 +87,7 @@ returns [ASTNode node]
     |   centroStmt          { $node = $centroStmt.node; }
     |   esperaStmt          { $node = $esperaStmt.node; }
     |   ejecutaStmt         { $node = $ejecutaStmt.node; }
-    |   repiteStmt          { $node = $repiteStmt.node; }      // <-- NUEVO
+    |   repiteStmt          { $node = $repiteStmt.node; }     
     ;
 
 repiteStmt
@@ -304,6 +310,132 @@ returns [ASTNode node]
         }
     ;
 
+// Condicional:
+// SI (cond) [ ...then... ] [ ...else... ]
+siStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> thenBody = new java.util.ArrayList<ASTNode>();
+    java.util.List<ASTNode> elseBody = new java.util.ArrayList<ASTNode>();
+    boolean hasElse = false;
+}
+    :   SI PAR_OPEN cond=expression PAR_CLOSE
+        LBRACK
+            ( s1=statement { if ($s1.node != null) thenBody.add($s1.node); } (SEP | EOL)* )*
+        RBRACK
+        ( (SEP | EOL)*                                   // separadores opcionales entre bloques
+          LBRACK
+            ( s2=statement { if ($s2.node != null) elseBody.add($s2.node); } (SEP | EOL)* )*
+          RBRACK
+          { hasElse = true; }
+        )?
+        (SEP)?
+        {
+            $node = hasElse
+                ? new IfElseStmt($cond.node, thenBody, elseBody)
+                : new IfStmt($cond.node, thenBody);
+        }
+    ;
+    
+// HAZ.HASTA
+//   [ ...cuerpo... ]
+// ( condicion )
+hazHastaStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
+}
+    :   HAZHASTA
+        (SEP | EOL)*                     // << permite salto(s) de línea después de HAZ.HASTA
+        LBRACK
+            (SEP | EOL)*                 // << permite líneas en blanco al inicio del bloque
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*             // separadores tras cada sentencia (incluye líneas en blanco)
+            )*
+        RBRACK
+        (SEP | EOL)*                     // separadores opcionales entre bloque y condición
+        PAR_OPEN cond=expression PAR_CLOSE
+        (SEP)?
+        {
+            $node = new DoUntilStmt($cond.node, body);
+        }
+    ;
+
+// HASTA (condicion)
+// [ ...cuerpo... ]
+hastaStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
+}
+    :   HASTA
+        (SEP | EOL)*                         // separadores opcionales tras 'HASTA'
+        PAR_OPEN cond=expression PAR_CLOSE
+        (SEP | EOL)*
+        LBRACK
+            (SEP | EOL)*                     // líneas en blanco al inicio del bloque
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*                 // separadores tras cada sentencia
+            )*
+        RBRACK
+        (SEP)?
+        {
+            $node = new UntilStmt($cond.node, body);
+        }
+    ;
+
+// HAZ.MIENTRAS
+//   [ ...cuerpo... ]
+// ( condicion )   // debe evaluar a Boolean
+hazMientrasStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
+}
+    :   HAZMIENTRAS
+        (SEP | EOL)*                     // permite saltos después de HAZ.MIENTRAS
+        LBRACK
+            (SEP | EOL)*                 // líneas en blanco al inicio del bloque
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*             // separadores tras cada sentencia
+            )*
+        RBRACK
+        (SEP | EOL)*                     // separadores entre bloque y condición
+        PAR_OPEN cond=expression PAR_CLOSE
+        (SEP)?
+        {
+            $node = new DoWhileStmt($cond.node, body);
+        }
+    ;
+    
+// MIENTRAS (condicion)
+// [ ...cuerpo... ]
+mientrasStmt
+returns [ASTNode node]
+@init {
+    java.util.List<ASTNode> body = new java.util.ArrayList<ASTNode>();
+}
+    :   MIENTRAS
+        (SEP | EOL)*                         // separadores tras 'MIENTRAS'
+        PAR_OPEN cond=expression PAR_CLOSE
+        (SEP | EOL)*
+        LBRACK
+            (SEP | EOL)*                     // líneas en blanco al inicio del bloque
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*                 // separadores tras cada sentencia
+            )*
+        RBRACK
+        (SEP)?
+        {
+            $node = new WhileStmt($cond.node, body);
+        }
+    ;
+
+
 // ======= Procedimientos =======
 
 // para nombre [param1, param2, ...]
@@ -357,8 +489,16 @@ returns [java.util.List<String> ids]
 
 expression
 returns [ASTNode node]
-    :   a=addExpr                       { $node = $a.node; }
-        ( EQ b=addExpr                  { $node = new Equal($node, $b.node); } )*
+    :   left=relExpr                     { $node = $left.node; }
+        ( EQ right=relExpr               { $node = new Equal($node, $right.node); } )*
+    ;
+
+relExpr
+returns [ASTNode node]
+    :   a=addExpr                        { $node = $a.node; }
+        (   GT b=addExpr                 { $node = new GreaterThan($node, $b.node); }
+        |   LT b=addExpr                 { $node = new LessThan($node, $b.node); }
+        )*
     ;
 
 addExpr
@@ -379,17 +519,16 @@ returns [ASTNode node]
 
 term
 returns [ASTNode node]
-    :   NUMBER  { $node = new Constant(Integer.parseInt($NUMBER.text)); }
-    |   BOOLEAN { $node = new Constant(Boolean.parseBoolean($BOOLEAN.text.toLowerCase())); }
-    |   STRING  {
-                  String txt = $STRING.text;
-                  String content = txt.substring(1, txt.length()-1).replace("\\\"", "\"");
-                  $node = new Constant(content);
-                }
-    |   ID      { $node = new VarRef($ID.text); }
-    |   PAR_OPEN expression PAR_CLOSE  { $node = $expression.node; }
+
+    :   NUMBER                          { $node = new Constant(Integer.parseInt($NUMBER.text)); }
+    |   BOOLEAN                         { $node = new Constant(Boolean.parseBoolean($BOOLEAN.text)); }
+    |   ID                              { $node = new VarRef($ID.text); }
+    |   PAR_OPEN expression PAR_CLOSE   { $node = $expression.node; }
+    |   MAYORQUEQ a=addExpr b=addExpr   { $node = new GreaterThan($a.node, $b.node); }
+    |   MENORQUEQ a=addExpr b=addExpr   { $node = new LessThan($a.node, $b.node); }
     |   IGUALESQ e1=expression e2=expression { $node = new Equal($e1.node, $e2.node); }
     |   AZAR e=expression              { $node = new Azar($e.node); }       // <-- NUEVO
+
     ;
 
 
@@ -456,6 +595,21 @@ MINUS: '-';
 MULT: '*';
 DIV: '/';
 AT: '@';
+
+
+SI : 'SI' ;
+
+HAZHASTA : 'HAZ.HASTA' ;
+HASTA : 'HASTA' ;
+
+HAZMIENTRAS : 'HAZ.MIENTRAS' ;
+MIENTRAS : 'MIENTRAS' ;
+
+GT : '>' ;
+LT : '<' ;
+MAYORQUEQ : 'mayorque?' | 'MayorQue?' ;
+MENORQUEQ : 'menorque?' | 'MenorQue?' ;
+
 
 IGUALESQ: [Ii][Gg][Uu][Aa][Ll][Ee][Ss]'?';
 EQ: '==';
