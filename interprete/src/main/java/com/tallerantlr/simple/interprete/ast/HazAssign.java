@@ -13,16 +13,26 @@ public class HazAssign implements ASTNode {
 
     @Override
     public Object execute(Map<String, Object> symbolTable) {
+        // Declaración sin valor inicial: 'Haz x'
+        if (valueExpr == null) {
+            if (!symbolTable.containsKey(name)) {
+                symbolTable.put(name, null);   // sin tipo aún
+            }
+            return null;
+        }
+
         Object newVal = valueExpr.execute(symbolTable);
         boolean exists = symbolTable.containsKey(name);
 
         if (!exists) {
-            // Primera vez: "declara" y fija tipo
+            // Primera vez con valor: declara y fija tipo
             symbolTable.put(name, newVal);
             return null;
         }
 
         Object oldVal = symbolTable.get(name);
+
+        // Reasignación permitida si el tipo coincide (o ambos null)
         if ((oldVal == null && newVal == null) ||
             (oldVal != null && newVal != null && oldVal.getClass().equals(newVal.getClass()))) {
             symbolTable.put(name, newVal);
@@ -34,4 +44,5 @@ public class HazAssign implements ASTNode {
         throw new RuntimeException("Error semántico: variable '" + name +
                                    "' es de tipo " + tOld + " y se intentó asignar " + tNew);
     }
+
 }

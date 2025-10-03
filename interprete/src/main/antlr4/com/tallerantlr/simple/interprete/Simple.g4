@@ -92,8 +92,13 @@ repiteStmt
 returns [ASTNode node]
 @init { java.util.List<ASTNode> body = new java.util.ArrayList<>(); }
     :   REPITE n=expression
+        (SEP | EOL)*           // ← permite salto(s) antes de [
         LBRACK
-            ( s=statement { if ($s.node != null) body.add($s.node); } )+
+            (SEP | EOL)*       // ← NUEVO: líneas en blanco al inicio
+            (   s=statement
+                { if ($s.node != null) body.add($s.node); }
+                (SEP | EOL)*   // ← NUEVO: separadores tras cada sentencia
+            )+
         RBRACK
         (SEP)?
         { $node = new Repite($n.node, body); }
@@ -103,13 +108,19 @@ returns [ASTNode node]
 ejecutaStmt
 returns [ASTNode node]
 @init { java.util.List<ASTNode> list = new java.util.ArrayList<>(); }
-    :   EJECUTA LBRACK
-            ( s=statement { if ($s.node != null) list.add($s.node); } )+
+    :   EJECUTA
+        (SEP | EOL)*           // ← permite salto(s) antes de [
+        LBRACK
+            (SEP | EOL)*       // ← NUEVO: líneas en blanco al inicio
+            (   s=statement
+                { if ($s.node != null) list.add($s.node); }
+                (SEP | EOL)*   // ← NUEVO: separadores tras cada sentencia
+            )+
         RBRACK (SEP)?
         { $node = new Ejecuta(list); }
     ;
-    
-    
+
+  
 esperaStmt
 returns [ASTNode node]
     :   ESPERA e=expression (SEP)?
@@ -238,12 +249,20 @@ returns [ASTNode node]
 
 hazStmt
 returns [ASTNode node]
-    :   HAZ id=ID v=expression (SEP)?
+    :   // HAZ con inicialización en la misma línea
+        HAZ id=ID v=expression (SEP)?
         {
-            hazCount++;  // ← cuenta las "declaraciones" por Haz
+            hazCount++;
             $node = new HazAssign($id.text, $v.node);
         }
+    |   // HAZ solo declara (sin valor)
+        HAZ id=ID (SEP)?
+        {
+            hazCount++;
+            $node = new HazAssign($id.text, null);
+        }
     ;
+
 
 // println( expr )
 printlnStmt
@@ -288,8 +307,6 @@ returns [ASTNode node]
         }
     ;
 
-// Condicional:
-// SI (cond) [ ...then... ] [ ...else... ]
 siStmt
 returns [ASTNode node]
 @init {
@@ -298,12 +315,21 @@ returns [ASTNode node]
     boolean hasElse = false;
 }
     :   SI PAR_OPEN cond=expression PAR_CLOSE
+        (SEP | EOL)*           // ← permite salto(s) tras la cabecera
         LBRACK
-            ( s1=statement { if ($s1.node != null) thenBody.add($s1.node); } (SEP | EOL)* )*
+            (SEP | EOL)*       // ← NUEVO: líneas en blanco al inicio del bloque THEN
+            (   s1=statement
+                { if ($s1.node != null) thenBody.add($s1.node); }
+                (SEP | EOL)*   // separadores tras cada sentencia
+            )*
         RBRACK
-        ( (SEP | EOL)*                                   // separadores opcionales entre bloques
+        ( (SEP | EOL)*         // separadores entre THEN y ELSE
           LBRACK
-            ( s2=statement { if ($s2.node != null) elseBody.add($s2.node); } (SEP | EOL)* )*
+            (SEP | EOL)*       // ← NUEVO: líneas en blanco al inicio del bloque ELSE
+            (   s2=statement
+                { if ($s2.node != null) elseBody.add($s2.node); }
+                (SEP | EOL)*   // separadores tras cada sentencia
+            )*
           RBRACK
           { hasElse = true; }
         )?
@@ -314,6 +340,7 @@ returns [ASTNode node]
                 : new IfStmt($cond.node, thenBody);
         }
     ;
+
     
 // HAZ.HASTA
 //   [ ...cuerpo... ]
@@ -422,10 +449,13 @@ returns [java.util.List<String> formalParams]
     $formalParams = new java.util.ArrayList<String>();
 }
     :   PARA name=ID
+        (EOL)*                               // ← NUEVO: permitir saltos de línea
         (
-            p=optParams (EOL)* { $formalParams = $p.ids; }
+            p=optParams (EOL)*               // ← si viene '[', parsea parámetros
+            { $formalParams = $p.ids; }
           |
-            (EOL)* { $formalParams = new java.util.ArrayList<String>(); }
+            /* sin parámetros */
+            { $formalParams = new java.util.ArrayList<String>(); }
         )
         ( s=statement { if ($s.node != null) body.add($s.node); } (EOL)* )*
         FIN (SEP|EOL)*
@@ -438,6 +468,7 @@ returns [java.util.List<String> formalParams]
             procTable.put(key, def);
         }
     ;
+
 
 optParams
 returns [java.util.List<String> ids]
@@ -452,8 +483,47 @@ returns [java.util.List<String> ids]
 // ======= Expresiones =======
 expression
 returns [ASTNode node]
-    :   left=relExpr                     { $node = $left.node; }
-        ( EQ right=relExpr               { $node = new Equal($node, $right.node); } )*
+ :   left=relExpr
+        {
+            $node = $left.node;
+        }
+        ( EQ right=relExpr
+            {
+                $node = new Equal($node, $right.node);
+            }
+        )*
+    |   s=sumaExpr
+        {
+            $node = $s.node;
+        }
+    |   productoExpr                    
+    	{ 
+    		$node = $productoExpr.node; 
+    	}
+
+
+    |   d=divisionExpr
+        {
+            $node = $d.node;
+        }
+    ;
+    
+   
+productoExpr
+returns [ASTNode node]
+@init { java.util.List<ASTNode> nodes = new java.util.ArrayList<>(); }
+    :   PRODUCTO e1=addExpr
+        (e2=addExpr { nodes.add($e2.node); })*
+      {
+        nodes.add(0, $e1.node);       
+        $node = new Producto(nodes);  
+      }
+    ;   
+    
+divisionExpr
+returns [ASTNode node]
+    :   DIVISION e1=addExpr e2=addExpr
+        { $node = new Division($e1.node, $e2.node); }
     ;
 
 relExpr
@@ -477,8 +547,13 @@ returns [ASTNode node]
     :   t1=term                         { $node = $t1.node; }
         ( MULT t2=term                  { $node = new Multiplication($node, $t2.node); }
         | PERM t3=term                  { $node = new Permutation($node, $t3.node); }
+        | DIV  t3=term                  { $node = new Division($node, $t3.node); }   // división infija
+        | PERM t4=term                  { $node = new Permutation($node, $t4.node); }
         )*
     ;
+    
+    
+   
 
 // ======== Operaciones nuevas ========
 term
@@ -495,9 +570,23 @@ returns [ASTNode node]
             String content = txt.substring(1, txt.length()-1).replace("\\\"", "\"");
             $node = new Constant(content);
           }
+          
+    |   'Producto' PAR_OPEN first=expression (COMMA rest+=expression)* PAR_CLOSE
+          {
+            java.util.List<ASTNode> factors = new java.util.ArrayList<>();
+            factors.add($first.node);
+            if ($rest != null) {
+              for (SimpleParser.ExpressionContext r : $rest) factors.add(r.node);
+            }
+            $node = new Producto(factors);
+          }
+
+    |   'Division' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
+          { $node = new Division($e1.node, $e2.node); }
 
     |   ID
-          { $node = new VarRef($ID.text); }
+          { $node = new VarRef($ID.text, $ID.getLine(), $ID.getCharPositionInLine()); }
+
 
     |   PAR_OPEN expression PAR_CLOSE
           { $node = $expression.node; }
@@ -531,8 +620,21 @@ returns [ASTNode node]
     |   AZAR e=expression                       { $node = new Azar($e.node); }
     ;
 
+// ======= Nuevas reglas integradas: sumaExpr y exprList =======
+// forma: suma 1 2 3 ...
+sumaExpr
+returns [ASTNode node]
+    :   SUMA exprList                   { $node = new Suma($exprList.list); }
+    ;
 
 
+// Lista de argumentos para suma (usa addExpr para respetar prioridad de operadores)
+exprList
+returns [List<ASTNode> list]
+@init { $list = new ArrayList<>(); }
+    :   e1=addExpr { $list.add($e1.node); }
+        ( e2=addExpr { $list.add($e2.node); } )*
+    ;
 
 // ======= Utilitarios =======
 argList
@@ -580,8 +682,10 @@ CENTRO: [Cc][Ee][Nn][Tt][Rr][Oo];
 ESPERA: [Ee][Ss][Pp][Ee][Rr][Aa];
 EJECUTA: [Ee][Jj][Ee][Cc][Uu][Tt][Aa];
 REPITE: [Rr][Ee][Pp][Ii][Tt][Ee];
-
-
+DIVISION: 'división';   
+DIV: '/'; 
+PRODUCTO : 'producto';
+SUMA: 'suma';
 
 
 
@@ -592,7 +696,6 @@ STRING
 PLUS: '+';
 MINUS: '-';
 MULT: '*';
-DIV: '/';
 AT: '@';
 
 
