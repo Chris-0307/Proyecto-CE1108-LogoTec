@@ -18,16 +18,21 @@ grammar Simple;
 @parser::members {
     Map<String, Object> globals = new HashMap<>();
     Map<String, ProcedureDef> procTable = new HashMap<>();
-    int varDeclCount = 0;
+
+    // int varDeclCount = 0;      // ← REMOVE
+    int hazCount = 0;             // ← NEW
 
     static String sig(String name, int arity) { return name + "#" + arity; }
+
+    public boolean executeOnParse = true;
+    public boolean enforceVarDecl = true;   // mantenemos el nombre por compatibilidad
 }
 
-// ======= Reglas de alto nivel =======
+
 program
 returns [List<ASTNode> body]
 @init { $body = new ArrayList<>(); }
-    :   (EOL)* 
+    :   (EOL)*
         (   (p=procedureDef)
           | (s=statement { if ($s.node != null) $body.add($s.node); })
         )
@@ -39,19 +44,21 @@ returns [List<ASTNode> body]
         (SEP | EOL)*
         EOF
       {
-        if (varDeclCount == 0) {
-            throw new RuntimeException("Error: el programa debe declarar al menos una variable.");
+        if (executeOnParse) {
+          if (enforceVarDecl && hazCount == 0) {
+            throw new RuntimeException("Error: el programa debe declarar al menos una variable con 'Haz'.");
+          }
+          for (ASTNode n : $body) n.execute(globals);
         }
-        for (ASTNode n : $body) n.execute(globals);
       }
     ;
+
 
 // ======= Sentencias =======
 statement
 returns [ASTNode node]
 
     :   printlnStmt     { $node = $printlnStmt.node; }
-    |   varDecl         { $node = $varDecl.node; }
     |   varAssign       { $node = $varAssign.node; }
     |   procCallStmt    { $node = $procCallStmt.node; }
     |   siStmt          { $node = $siStmt.node; }
@@ -232,30 +239,17 @@ returns [ASTNode node]
 hazStmt
 returns [ASTNode node]
     :   HAZ id=ID v=expression (SEP)?
-        { $node = new HazAssign($id.text, $v.node); }
+        {
+            hazCount++;  // ← cuenta las "declaraciones" por Haz
+            $node = new HazAssign($id.text, $v.node);
+        }
     ;
-
-
 
 // println( expr )
 printlnStmt
 returns [ASTNode node]
     :   PRINTLN PAR_OPEN expression PAR_CLOSE (SEP)? 
         { $node = new Println($expression.node); }
-    ;
-
-varDecl
-returns [ASTNode node]
-    :   VAR id=ID ASSIGN e=expression (SEP)?
-        {
-            varDeclCount++;
-            $node = new VarAssign($id.text, $e.node);
-        }
-    |   VAR id=ID (SEP)?
-        {
-            varDeclCount++;
-            $node = new VarDecl($id.text);
-        }
     ;
 
 

@@ -14,16 +14,17 @@ public class HazAssign implements ASTNode {
     @Override
     public Object execute(Map<String, Object> symbolTable) {
         Object newVal = valueExpr.execute(symbolTable);
-        Object oldVal = symbolTable.get(name);
+        boolean exists = symbolTable.containsKey(name);
 
-        if (oldVal == null) {
-            // Primera asignación: fija el “tipo” con el valor inicial
+        if (!exists) {
+            // Primera vez: "declara" y fija tipo
             symbolTable.put(name, newVal);
             return null;
         }
 
-        // Si ya hay valor previo, verifica “tipo” (clase Java)
-        if (oldVal.getClass().equals(newVal != null ? newVal.getClass() : null)) {
+        Object oldVal = symbolTable.get(name);
+        if ((oldVal == null && newVal == null) ||
+            (oldVal != null && newVal != null && oldVal.getClass().equals(newVal.getClass()))) {
             symbolTable.put(name, newVal);
             return null;
         }
