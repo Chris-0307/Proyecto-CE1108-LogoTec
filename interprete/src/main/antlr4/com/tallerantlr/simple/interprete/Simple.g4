@@ -92,7 +92,6 @@ returns [ASTNode node]
         { $node = new Repite($n.node, body); }
     ;
 
-
 ejecutaStmt
 returns [ASTNode node]
 @init { java.util.List<ASTNode> list = new java.util.ArrayList<>(); }
@@ -102,20 +101,17 @@ returns [ASTNode node]
         { $node = new Ejecuta(list); }
     ;
     
-    
 esperaStmt
 returns [ASTNode node]
     :   ESPERA e=expression (SEP)?
         { $node = new Espera($e.node); }
     ;
     
-
 centroStmt
 returns [ASTNode node]
     :   CENTRO (SEP)?
         { $node = new Centro(); }
     ;
-
 
 ponColorLapizStmt
 returns [ASTNode node]
@@ -123,13 +119,11 @@ returns [ASTNode node]
         { $node = new PonColorLapiz($e.node); }
     ;
 
-
 subeLapizStmt
 returns [ASTNode node]
     :   (SUBELAPIZ | SB) (SEP)?
         { $node = new SubeLapiz(); }
     ;
-
 
 bajaLapizStmt
 returns [ASTNode node]
@@ -137,13 +131,11 @@ returns [ASTNode node]
         { $node = new BajaLapiz(); }
     ;
 
-
 ponYStmt
 returns [ASTNode node]
     :   PONY e=expression (SEP)?
         { $node = new PonY($e.node); }
     ;
-
 
 ponXStmt
 returns [ASTNode node]
@@ -151,20 +143,17 @@ returns [ASTNode node]
         { $node = new PonX($e.node); }
     ;
 
-
 rumboStmt
 returns [ASTNode node]
     :   RUMBO (SEP)?
         { $node = new Rumbo(); }
     ;
 
-
 ponRumboStmt
 returns [ASTNode node]
     :   PONRUMBO e=expression (SEP)?
         { $node = new PonRumbo($e.node); }
     ;
-
 
 // PonPOS [ X Y ]
 // PonXY  X Y
@@ -176,13 +165,11 @@ returns [ASTNode node]
         { $node = new PonPos($x.node, $y.node); }
     ;
 
-
 ocultaTortugaStmt
 returns [ASTNode node]
     :   (OCULTATORTUGA | OT) (SEP)?
         { $node = new OcultaTortuga(); }
     ;
-
 
 giraIzquierdaStmt
 returns [ASTNode node]
@@ -190,20 +177,17 @@ returns [ASTNode node]
         { $node = new GiraIzquierda($e.node); }
     ;
 
-
 giraDerechaStmt
 returns [ASTNode node]
     :   (GIRADERECHA | GD) e=expression (SEP)?
         { $node = new GiraDerecha($e.node); }
     ;
 
-
 retrocedeStmt
 returns [ASTNode node]
     :   (RETROCEDE | RE) e=expression (SEP)?
         { $node = new Retrocede($e.node); }
     ;
-
 
 incStmt
 returns [ASTNode node]
@@ -213,14 +197,11 @@ returns [ASTNode node]
         { $node = new Inc($n1.text, $n2.node); }                    // inc [var expr]
     ;
 
-
 avanzaStmt
 returns [ASTNode node]
     :   (AVANZA | AV) e=expression (SEP)?
         { $node = new Avanza($e.node); }
     ;
-
-
 
 inicStmt
 returns [ASTNode node]
@@ -228,19 +209,16 @@ returns [ASTNode node]
         { $node = new InicAssign($id.text, $v.node); }
     ;
 
-
 hazStmt
 returns [ASTNode node]
     :   HAZ id=ID v=expression (SEP)?
         { $node = new HazAssign($id.text, $v.node); }
     ;
 
-
-
 // println( expr )
 printlnStmt
 returns [ASTNode node]
-    :   PRINTLN PAR_OPEN expression PAR_CLOSE (SEP)? 
+    :   PRINTLN PAR_OPEN expression PAR_CLOSE (SEP)?
         { $node = new Println($expression.node); }
     ;
 
@@ -419,7 +397,6 @@ returns [ASTNode node]
         }
     ;
 
-
 // ======= Procedimientos =======
 procedureDef
 returns [java.util.List<String> formalParams]
@@ -456,12 +433,58 @@ returns [java.util.List<String> ids]
     ;
 
 // ======= Expresiones =======
+// Integración de sumaExpr (forma: suma 1 2 3 ...) y la jerarquía existente.
+// La alternativa con 'suma' se resuelve con sumaExpr; las demás usan relExpr y operadores habituales.
 expression
 returns [ASTNode node]
-    :   left=relExpr                     { $node = $left.node; }
-        ( EQ right=relExpr               { $node = new Equal($node, $right.node); } )*
+    :   left=relExpr
+        {
+            $node = $left.node;
+        }
+        ( EQ right=relExpr
+            {
+                $node = new Equal($node, $right.node);
+            }
+        )*
+    |   s=sumaExpr
+        {
+            $node = $s.node;
+        }
+    |   productoExpr                    
+    	{ 
+    		$node = $productoExpr.node; 
+    	}
+
+
+    |   d=divisionExpr
+        {
+            $node = $d.node;
+        }
+    ;
+    
+    
+    
+divisionExpr
+returns [ASTNode node]
+    :   DIVISION e1=addExpr e2=addExpr
+        { $node = new Division($e1.node, $e2.node); }
+    ;
+    
+
+productoExpr
+returns [ASTNode node]
+@init { java.util.List<ASTNode> nodes = new java.util.ArrayList<>(); }
+    :   PRODUCTO e1=addExpr
+        (e2=addExpr { nodes.add($e2.node); })*
+      {
+        nodes.add(0, $e1.node);       
+        $node = new Producto(nodes);  
+      }
     ;
 
+    
+   
+ 
 relExpr
 returns [ASTNode node]
     :   a=addExpr                        { $node = $a.node; }
@@ -482,10 +505,10 @@ multExpr
 returns [ASTNode node]
     :   t1=term                         { $node = $t1.node; }
         ( MULT t2=term                  { $node = new Multiplication($node, $t2.node); }
-        | PERM t3=term                  { $node = new Permutation($node, $t3.node); }
+        | DIV  t3=term                  { $node = new Division($node, $t3.node); }   // división infija
+        | PERM t4=term                  { $node = new Permutation($node, $t4.node); }
         )*
     ;
-
 // ======== Operaciones nuevas ========
 term
 returns [ASTNode node]
@@ -528,6 +551,19 @@ returns [ASTNode node]
             $node = new Diferencia(terms);
           }
 
+    |   'Producto' PAR_OPEN first=expression (COMMA rest+=expression)* PAR_CLOSE
+          {
+            java.util.List<ASTNode> factors = new java.util.ArrayList<>();
+            factors.add($first.node);
+            if ($rest != null) {
+              for (SimpleParser.ExpressionContext r : $rest) factors.add(r.node);
+            }
+            $node = new Producto(factors);
+          }
+
+    |   'Division' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
+          { $node = new Division($e1.node, $e2.node); }
+
     // Palabras estilo operador infijo simple
     |   MAYORQUEQ a=addExpr b=addExpr           { $node = new GreaterThan($a.node, $b.node); }
     |   MENORQUEQ a=addExpr b=addExpr           { $node = new LessThan($a.node, $b.node); }
@@ -538,7 +574,20 @@ returns [ASTNode node]
     ;
 
 
+// ======= Nuevas reglas integradas: sumaExpr y exprList =======
+// forma: suma 1 2 3 ...
+sumaExpr
+returns [ASTNode node]
+    :   SUMA exprList                   { $node = new Suma($exprList.list); }
+    ;
 
+// Lista de argumentos para suma (usa addExpr para respetar prioridad de operadores)
+exprList
+returns [List<ASTNode> list]
+@init { $list = new ArrayList<>(); }
+    :   e1=addExpr { $list.add($e1.node); }
+        ( e2=addExpr { $list.add($e2.node); } )*
+    ;
 
 // ======= Utilitarios =======
 argList
@@ -551,12 +600,16 @@ returns [List<ASTNode> list]
 // ======= Tokens =======
 SEP : SEMICOLON ;
 EOL : NEWLINE ;
+DIVISION: 'división';   
+DIV: '/'; 
+PRODUCTO : 'producto';
 
+// --- Palabras clave (asegúrate que aparezcan antes de ID) ---
 PARA: 'para';
 FIN:  'fin';
 VAR:  'var';
 PRINTLN: 'println';
-HAZ: [Hh] 'az';  
+HAZ: [Hh] 'az';
 INIC: 'inic';
 INC: [Ii][Nn][Cc];
 AZAR: [Aa][Zz][Aa][Rr];
@@ -586,11 +639,8 @@ CENTRO: [Cc][Ee][Nn][Tt][Rr][Oo];
 ESPERA: [Ee][Ss][Pp][Ee][Rr][Aa];
 EJECUTA: [Ee][Jj][Ee][Cc][Uu][Tt][Aa];
 REPITE: [Rr][Ee][Pp][Ii][Tt][Ee];
-
-
-
-
-
+SUMA: 'suma';
+    
 STRING
   : '"' ( '\\"' | ~["\r\n] )* '"'   // cadena con \" escapado
   ;
@@ -598,9 +648,7 @@ STRING
 PLUS: '+';
 MINUS: '-';
 MULT: '*';
-DIV: '/';
 AT: '@';
-
 
 SI : 'SI' ;
 
@@ -614,7 +662,6 @@ GT : '>' ;
 LT : '<' ;
 MAYORQUEQ : 'mayorque?' | 'MayorQue?' ;
 MENORQUEQ : 'menorque?' | 'MenorQue?' ;
-
 
 IGUALESQ: [Ii][Gg][Uu][Aa][Ll][Ee][Ss]'?';
 EQ: '==';
@@ -632,13 +679,13 @@ SEMICOLON: ';';
 fragment ID_START : [a-z];
 fragment ID_CHAR  : [a-zA-Z0-9_&@];
 
-// IDs v�lidos (<= 10)
+// IDs válidos (<= 10)
 ID
   : ID_START ID_CHAR*
     { getText().length() <= 10 }?
   ;
 
-// IDs inv�lidos (> 10) => ERROR
+// IDs inválidos (> 10) => ERROR
 INVALID_ID
   : ID_START ID_CHAR*
     { getText().length() > 10 }?

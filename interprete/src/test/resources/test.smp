@@ -66,3 +66,23 @@ gd 15
 re 2
 gi 15
 ot
+
+
+println(división 59 6); 
+
+
+println(59 / 6); 
+
+
+
+
+println(suma 1 2 4 ); 
+
+println(producto 1 2 3 4 5);   
+
+println(producto 2 3 4;);                    
+
+println(suma 1 2 (producto 2 3)); 
+println((producto 2 3) + 4);   // imprime 10
+
+

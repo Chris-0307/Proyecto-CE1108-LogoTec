@@ -171,6 +171,36 @@ public interface SimpleVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitProcCallStmt(SimpleParser.ProcCallStmtContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SimpleParser#siStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSiStmt(SimpleParser.SiStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#hazHastaStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitHazHastaStmt(SimpleParser.HazHastaStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#hastaStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitHastaStmt(SimpleParser.HastaStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#hazMientrasStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitHazMientrasStmt(SimpleParser.HazMientrasStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#mientrasStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMientrasStmt(SimpleParser.MientrasStmtContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SimpleParser#procedureDef}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -189,6 +219,24 @@ public interface SimpleVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpression(SimpleParser.ExpressionContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SimpleParser#divisionExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDivisionExpr(SimpleParser.DivisionExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#productoExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitProductoExpr(SimpleParser.ProductoExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#relExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRelExpr(SimpleParser.RelExprContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SimpleParser#addExpr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -206,6 +254,18 @@ public interface SimpleVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTerm(SimpleParser.TermContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#sumaExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSumaExpr(SimpleParser.SumaExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SimpleParser#exprList}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprList(SimpleParser.ExprListContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SimpleParser#argList}.
 	 * @param ctx the parse tree
