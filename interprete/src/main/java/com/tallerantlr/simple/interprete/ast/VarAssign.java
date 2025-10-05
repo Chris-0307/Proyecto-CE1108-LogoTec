@@ -19,8 +19,27 @@ public class VarAssign implements ASTNode {
 
 	@Override
 	public Object execute(Map<String, Object> symbolTable) {
-		symbolTable.put(name, expression.execute(symbolTable));
-		return null;
+	    Object newVal = expression.execute(symbolTable);
+	    Object oldVal = symbolTable.get(name);
+
+	    if (!symbolTable.containsKey(name)) {
+	        throw new RuntimeException("Error semántico: variable no declarada: " + name);
+	    }
+
+	    if (oldVal == null) { // primera asignación fija el tipo
+	        symbolTable.put(name, newVal);
+	        return null;
+	    }
+
+	    if (newVal == null || !oldVal.getClass().equals(newVal.getClass())) {
+	        String tOld = oldVal.getClass().getSimpleName();
+	        String tNew = (newVal == null) ? "null" : newVal.getClass().getSimpleName();
+	        throw new RuntimeException("Error semántico: variable '" + name +
+	                                   "' es de tipo " + tOld + " y se intentó asignar " + tNew);
+	    }
+
+	    symbolTable.put(name, newVal);
+	    return null;
 	}
 
 }

@@ -15,8 +15,9 @@ public class VarDecl implements ASTNode {
 
 	@Override
 	public Object execute(Map<String, Object> symbolTable) {
-		symbolTable.put(name,  new Object());
-		return null;
+	    // variable declarada pero sin valor/tipo aún
+	    symbolTable.put(name, null);
+	    return null;
 	}
 
 }
