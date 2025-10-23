@@ -1,10 +1,18 @@
 package com.tallerantlr.simple.interprete.ide;
 
+import com.tallerantlr.simple.interprete.SimpleLexer;
+import com.tallerantlr.simple.interprete.SimpleParser;
+
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.*;
 import java.awt.*;
 import java.io.PrintStream;
+
 
 public class MiniIDE extends JFrame {
     private final JTextArea editor = new JTextArea();
@@ -32,6 +40,8 @@ public class MiniIDE extends JFrame {
         console.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
         console.setBackground(new Color(250, 250, 250));
         console.setBorder(new EmptyBorder(6, 6, 6, 6));
+        
+        
 
         // Botón ejecutar
         JButton runBtn = new JButton("Ejecutar");
@@ -67,6 +77,13 @@ public class MiniIDE extends JFrame {
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topBar.add(runBtn);
         topBar.add(treeBtn);
+        
+     // dentro del constructor MiniIDE:
+        JButton irBtn = new JButton("Generar IR");
+        irBtn.addActionListener(e -> generateIR());
+
+        topBar.add(irBtn);
+
 
         setLayout(new BorderLayout());
         add(topBar, BorderLayout.NORTH);
@@ -122,6 +139,43 @@ public class MiniIDE extends JFrame {
     }
 
     // ---------- Acciones ----------
+    
+    
+    private void generateIR() {
+        console.setText("");
+        try {
+            // Parsear sin ejecutar
+            CharStream in = CharStreams.fromString(editor.getText());
+            SimpleLexer lexer = new SimpleLexer(in);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            SimpleParser parser = new SimpleParser(tokens);
+            parser.executeOnParse = false;
+            parser.enforceVarDecl = false;
+
+            SimpleParser.ProgramContext tree = parser.program();
+
+            @SuppressWarnings("unchecked")
+            java.util.List<com.tallerantlr.simple.interprete.ast.ASTNode> body =
+                    (java.util.List<com.tallerantlr.simple.interprete.ast.ASTNode>) tree.body;
+
+            // ⛳️ CAMBIO CLAVE: usar el getter en vez de acceder al campo
+            java.util.Map<String, com.tallerantlr.simple.interprete.ast.ProcedureDef> procTable =
+                    parser.getProcTable();
+
+            com.tallerantlr.simple.interprete.codegen.CodeGenerator cg =
+                    new com.tallerantlr.simple.interprete.codegen.CodeGenerator();
+            cg.generateProgram(body, procTable);
+
+            com.tallerantlr.simple.interprete.ir.IR.IRModule mod = cg.getModule();
+            console.append(mod.toString());
+
+        } catch (Throwable t) {
+            console.append("[IR ERR] " + t.getMessage() + "\n");
+            t.printStackTrace();
+        }
+    }
+
+
 
     private void updateParseTree() {
         clearEditorHighlights();

@@ -26,6 +26,10 @@ grammar Simple;
 
     public boolean executeOnParse = true;
     public boolean enforceVarDecl = true;   // mantenemos el nombre por compatibilidad
+    
+     public Map<String, ProcedureDef> getProcTable() {
+        return procTable;
+    }
 }
 
 
