@@ -43,10 +43,13 @@ public class LLVMToolchain {
      *  - clang out.o runtime.o -o a.out
      */
     public static void buildExecutable(Path ll, Path runtimeObj, Path exeOut) throws Exception {
-        Path bc = ll.resolveSibling(changeExt(ll.getFileName().toString(), ".bc"));
+        Path bc  = ll.resolveSibling(changeExt(ll.getFileName().toString(), ".bc"));
         Path obj = ll.resolveSibling(changeExt(ll.getFileName().toString(), ".o"));
+        Path asm = ll.resolveSibling(changeExt(ll.getFileName().toString(), ".s")); // ← NUEVO
 
         mustOk(run("opt", "-O2", "-o", bc.toString(), ll.toString()), "opt");
+        // ← NUEVO: volcar ensamblador legible
+        mustOk(run("llc", "-filetype=asm", "-x86-asm-syntax=intel", "-o", asm.toString(), bc.toString()), "llc-asm");
         mustOk(run("llc", "-filetype=obj", "-o", obj.toString(), bc.toString()), "llc");
         mustOk(run("clang", "-o", exeOut.toString(), obj.toString(), runtimeObj.toString()), "clang");
     }
