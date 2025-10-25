@@ -495,7 +495,7 @@ returns [ASTNode node]
         { $node = $left.node; }
         ( EQ right=relExpr { $node = new Equal($node, $right.node); } )*
     |   s=sumaExpr         { $node = $s.node; }
-    |   dif=diferenciaExpr { $node = $dif.node; }    // <- AÑADE ESTA LÍNEA
+    |   diferenciaExpr { $node = $diferenciaExpr.node; }    
     |   productoExpr       { $node = $productoExpr.node; }
     |   d=divisionExpr     { $node = $d.node; }
     |   potenciaExpr { $node = $potenciaExpr.node; }
@@ -546,12 +546,7 @@ returns [ASTNode node]
         )*
     ;
 
-// forma: Diferencia a 1 2 ...
-diferenciaExpr
-returns [ASTNode node]
-    :   'Diferencia' exprList           { $node = new Diferencia($exprList.list); }
-    ;
-    
+
     
    
 
@@ -571,18 +566,6 @@ returns [ASTNode node]
             $node = new Constant(content);
           }
           
-    |   'Producto' PAR_OPEN first=expression (COMMA rest+=expression)* PAR_CLOSE
-          {
-            java.util.List<ASTNode> factors = new java.util.ArrayList<>();
-            factors.add($first.node);
-            if ($rest != null) {
-              for (SimpleParser.ExpressionContext r : $rest) factors.add(r.node);
-            }
-            $node = new Producto(factors);
-          }
-
-    |   'Division' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
-          { $node = new Division($e1.node, $e2.node); }
 
     |   ID
           { $node = new VarRef($ID.text, $ID.getLine(), $ID.getCharPositionInLine()); }
@@ -591,30 +574,12 @@ returns [ASTNode node]
     |   PAR_OPEN expression PAR_CLOSE
           { $node = $expression.node; }
 
-    // Funciones/operadores “palabra ( … )”
-    |   'Y' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
+     // --- Y / O con paréntesis separados (nuevo) ---
+    |   'Y' PAR_OPEN e1=expression PAR_CLOSE PAR_OPEN e2=expression PAR_CLOSE
           { $node = new And($e1.node, $e2.node); }
-
-    |   'O' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
+    |   'O' PAR_OPEN e1=expression PAR_CLOSE PAR_OPEN e2=expression PAR_CLOSE
           { $node = new Or($e1.node, $e2.node); }
 
-	|   'Potencia' PAR_OPEN first=expression (COMMA rest+=expression)* PAR_CLOSE
-	      {
-	        java.util.List<ASTNode> xs = new java.util.ArrayList<>();
-	        xs.add($first.node);
-	        if ($rest != null) for (SimpleParser.ExpressionContext r : $rest) xs.add(r.node);
-	        $node = new PotenciaN(xs);
-	      }
-
-    |   'Diferencia' PAR_OPEN first=expression (COMMA rest+=expression)* PAR_CLOSE
-          {
-            java.util.List<ASTNode> terms = new java.util.ArrayList<>();
-            terms.add($first.node);
-            if ($rest != null) {
-              for (SimpleParser.ExpressionContext r : $rest) terms.add(r.node);
-            }
-            $node = new Diferencia(terms);
-          }
 
     // Palabras estilo operador infijo simple
     |   MAYORQUEQ a=addExpr b=addExpr           { $node = new GreaterThan($a.node, $b.node); }
@@ -630,6 +595,13 @@ returns [ASTNode node]
 sumaExpr
 returns [ASTNode node]
     :   SUMA exprList                   { $node = new Suma($exprList.list); }
+    ;
+    
+    
+// forma: Diferencia a 1 2 ...
+diferenciaExpr
+returns [ASTNode node]
+    :   DIFERENCIA exprList           { $node = new Diferencia($exprList.list); }
     ;
     
     
@@ -701,12 +673,12 @@ CENTRO: [Cc][Ee][Nn][Tt][Rr][Oo];
 ESPERA: [Ee][Ss][Pp][Ee][Rr][Aa];
 EJECUTA: [Ee][Jj][Ee][Cc][Uu][Tt][Aa];
 REPITE: [Rr][Ee][Pp][Ii][Tt][Ee];
-DIVISION: 'división';   
+DIVISION: [Dd][Ii][Vv][Ii][Ss][Ii][Oo][Nn];   
 DIV: '/'; 
-PRODUCTO : 'producto';
-SUMA: 'suma';
-POTENCIA : 'potencia';
-
+PRODUCTO : [Pp][Rr][Oo][Dd][Uu][Cc][Tt][Oo];
+SUMA: [Ss][Uu][Mm][Aa];
+POTENCIA : [Pp][Oo][Tt][Ee][Nn][Cc][Ii][Aa];
+DIFERENCIA : [Dd][Ii][Ff][Ee][Rr][Ee][Nn][Cc][Ii][Aa];
 
 
 STRING
