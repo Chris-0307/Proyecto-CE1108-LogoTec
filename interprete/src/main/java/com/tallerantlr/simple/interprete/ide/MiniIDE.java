@@ -83,6 +83,11 @@ public class MiniIDE extends JFrame {
         irBtn.addActionListener(e -> generateIR());
 
         topBar.add(irBtn);
+        
+     // en el constructor, tras el botón IR:
+        JButton exeBtn = new JButton("Generar EXE (LLVM)");
+        exeBtn.addActionListener(e -> generateExe());
+        topBar.add(exeBtn);
 
 
         setLayout(new BorderLayout());
@@ -175,6 +180,61 @@ public class MiniIDE extends JFrame {
             console.append("[IR ERR] " + t.getMessage() + "\n");
             t.printStackTrace();
         }
+    }
+
+    private void generateExe() {
+        console.setText("");
+        try {
+            // Parsear -> IR
+            CharStream in = CharStreams.fromString(editor.getText());
+            SimpleLexer lexer = new SimpleLexer(in);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            SimpleParser parser = new SimpleParser(tokens);
+            parser.executeOnParse = false;
+            parser.enforceVarDecl = false;
+            SimpleParser.ProgramContext tree = parser.program();
+
+            @SuppressWarnings("unchecked")
+            java.util.List<com.tallerantlr.simple.interprete.ast.ASTNode> body =
+                    (java.util.List<com.tallerantlr.simple.interprete.ast.ASTNode>) tree.body;
+
+            java.util.Map<String, com.tallerantlr.simple.interprete.ast.ProcedureDef> procTable = parser.getProcTable();
+            java.util.Set<String> globals = parser.getGlobalNames();
+
+            com.tallerantlr.simple.interprete.codegen.CodeGenerator cg =
+                    new com.tallerantlr.simple.interprete.codegen.CodeGenerator(globals);
+            cg.generateProgram(body, procTable);
+            com.tallerantlr.simple.interprete.ir.IR.IRModule irmod = cg.getModule();
+            
+            // Optimizador de IR
+            com.tallerantlr.simple.interprete.optimizer.IROptimizer.run(irmod);
+            
+            // Emitir LLVM
+            com.tallerantlr.simple.interprete.backend.LLVMEmitter emitter =
+                    new com.tallerantlr.simple.interprete.backend.LLVMEmitter(irmod);
+            String ll = emitter.emit();
+
+            // Guardar .ll y construir
+            java.nio.file.Path outDir = java.nio.file.Paths.get("build");
+            java.nio.file.Files.createDirectories(outDir);
+            java.nio.file.Path llPath = outDir.resolve("program.ll");
+            com.tallerantlr.simple.interprete.backend.LLVMToolchain.writeFile(llPath, ll);
+
+            // runtime.o (compílalo antes y pon ruta correcta)
+            java.nio.file.Path runtimeObj = java.nio.file.Paths.get("runtime", "runtime.o");
+            java.nio.file.Path exeOut = outDir.resolve(isWindows()? "program.exe" : "program");
+
+            com.tallerantlr.simple.interprete.backend.LLVMToolchain.buildExecutable(llPath, runtimeObj, exeOut);
+
+            console.append("OK: ejecutable generado en " + exeOut.toAbsolutePath() + "\n");
+        } catch (Throwable t) {
+            console.append("[LLVM ERR] " + t.getMessage() + "\n");
+            t.printStackTrace();
+        }
+    }
+    private boolean isWindows() {
+        String os = System.getProperty("os.name","").toLowerCase();
+        return os.contains("win");
     }
 
 
