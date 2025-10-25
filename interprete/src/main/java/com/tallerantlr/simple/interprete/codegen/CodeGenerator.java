@@ -390,11 +390,18 @@ public class CodeGenerator {
 
         // Función azar(x)
         if (e instanceof Azar) {
-            IRValue v = genExpr(env, node(e, "getExpr","expr","e","value"));
+            ASTNode arg = nodeOrFirst(e,
+                    "getExpr","expr","expression","exp","e",
+                    "value","val","valueExpr","argExpr",
+                    "arg","argument","x","n","node");
+            IRValue v = genExpr(env, arg);
             IRTemp t = newTemp();
-            env.fn.code.add(new IRCall("runtime.azar", Collections.singletonList(v), t).c("random/azar"));
+            env.fn.code.add(new IRCall("runtime.azar",
+                    java.util.Collections.singletonList(v), t).c("random/azar"));
             return t;
         }
+
+
 
         // Desconocido -> 0 con NOP
         IRTemp t = newTemp();
