@@ -492,28 +492,14 @@ returns [java.util.List<String> ids]
 expression
 returns [ASTNode node]
  :   left=relExpr
-        {
-            $node = $left.node;
-        }
-        ( EQ right=relExpr
-            {
-                $node = new Equal($node, $right.node);
-            }
-        )*
-    |   s=sumaExpr
-        {
-            $node = $s.node;
-        }
-    |   productoExpr                    
-    	{ 
-    		$node = $productoExpr.node; 
-    	}
-
-
-    |   d=divisionExpr
-        {
-            $node = $d.node;
-        }
+        { $node = $left.node; }
+        ( EQ right=relExpr { $node = new Equal($node, $right.node); } )*
+    |   s=sumaExpr         { $node = $s.node; }
+    |   dif=diferenciaExpr { $node = $dif.node; }    // <- AÑADE ESTA LÍNEA
+    |   productoExpr       { $node = $productoExpr.node; }
+    |   d=divisionExpr     { $node = $d.node; }
+    |   potenciaExpr { $node = $potenciaExpr.node; }
+    
     ;
     
    
@@ -558,6 +544,12 @@ returns [ASTNode node]
         | DIV  t3=term                  { $node = new Division($node, $t3.node); }   // división infija
         | PERM t4=term                  { $node = new Permutation($node, $t4.node); }
         )*
+    ;
+
+// forma: Diferencia a 1 2 ...
+diferenciaExpr
+returns [ASTNode node]
+    :   'Diferencia' exprList           { $node = new Diferencia($exprList.list); }
     ;
     
     
@@ -606,8 +598,13 @@ returns [ASTNode node]
     |   'O' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
           { $node = new Or($e1.node, $e2.node); }
 
-    |   'Potencia' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
-          { $node = new Potencia($e1.node, $e2.node); }
+	|   'Potencia' PAR_OPEN first=expression (COMMA rest+=expression)* PAR_CLOSE
+	      {
+	        java.util.List<ASTNode> xs = new java.util.ArrayList<>();
+	        xs.add($first.node);
+	        if ($rest != null) for (SimpleParser.ExpressionContext r : $rest) xs.add(r.node);
+	        $node = new PotenciaN(xs);
+	      }
 
     |   'Diferencia' PAR_OPEN first=expression (COMMA rest+=expression)* PAR_CLOSE
           {
@@ -634,6 +631,20 @@ sumaExpr
 returns [ASTNode node]
     :   SUMA exprList                   { $node = new Suma($exprList.list); }
     ;
+    
+    
+    
+potenciaExpr
+returns [ASTNode node]
+@init { java.util.List<ASTNode> nodes = new java.util.ArrayList<>(); }
+    :   POTENCIA e1=addExpr
+        ( e2=addExpr { nodes.add($e2.node); } )*
+      {
+        nodes.add(0, $e1.node);
+        $node = new PotenciaN(nodes);
+      }
+    ;
+
 
 
 // Lista de argumentos para suma (usa addExpr para respetar prioridad de operadores)
@@ -694,6 +705,7 @@ DIVISION: 'división';
 DIV: '/'; 
 PRODUCTO : 'producto';
 SUMA: 'suma';
+POTENCIA : 'potencia';
 
 
 

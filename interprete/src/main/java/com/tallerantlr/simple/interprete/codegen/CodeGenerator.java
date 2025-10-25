@@ -387,6 +387,20 @@ public class CodeGenerator {
             }
             return acc;
         }
+        
+        if (e instanceof PotenciaN) {
+            List<ASTNode> list = nlist(e, "getArgs","args","list","nodes","values");
+            if (list == null || list.isEmpty()) return new IRConst(1); // o error, si prefieres
+            IRValue acc = genExpr(env, list.get(list.size()-1));
+            for (int i = list.size()-2; i >= 0; i--) {
+                IRValue base = genExpr(env, list.get(i));
+                IRTemp t = newTemp();
+                env.fn.code.add(new IRBinOpInstr(t, base, acc, IROp.POW));
+                acc = t;
+            }
+            return acc;
+        }
+
 
         // Función azar(x)
         if (e instanceof Azar) {
