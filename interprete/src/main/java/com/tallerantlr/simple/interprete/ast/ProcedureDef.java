@@ -27,14 +27,29 @@ public class ProcedureDef {
         if (args.size() != params.size())
             throw new RuntimeException("Aridad incorrecta en " + name + ": se esperaban " + params.size());
 
-        // Entorno local: copia somera de globals + override con params
-        Map<String,Object> local = new HashMap<>(globals);
-        for (int i = 0; i < params.size(); i++) {
-            local.put(params.get(i), args.get(i));
+        int n = params.size();
+        Object[] saved = new Object[n];
+        boolean[] existed = new boolean[n];
+
+        // 1) Sombrar parámetros en el MISMO mapa 'globals'
+        for (int i = 0; i < n; i++) {
+            String p = params.get(i);
+            existed[i] = globals.containsKey(p);
+            if (existed[i]) saved[i] = globals.get(p);
+            globals.put(p, args.get(i));
         }
-        for (ASTNode n : body) n.execute(local);
-        // Propagar cambios locales a globals (si quieres comportamiento “global”)
-        globals.putAll(local);
-        return null;
+
+        try {
+            // 2) Ejecutar cuerpo con los parámetros sombreados
+            for (ASTNode s : body) s.execute(globals);
+            return null;
+        } finally {
+            // 3) Restaurar el estado previo de los parámetros
+            for (int i = 0; i < n; i++) {
+                String p = params.get(i);
+                if (existed[i]) globals.put(p, saved[i]);
+                else globals.remove(p);
+            }
+        }
     }
 }

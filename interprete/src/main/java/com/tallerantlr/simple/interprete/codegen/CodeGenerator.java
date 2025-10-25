@@ -19,18 +19,31 @@ public class CodeGenerator {
     private final IRModule mod = new IRModule();
     private int tempCounter = 0;
     private int labelCounter = 0;
+    
+    private final Set<String> globalNames = new HashSet<>();
+    public CodeGenerator() {}
+    public CodeGenerator(Set<String> globalNames) {
+        if (globalNames != null) this.globalNames.addAll(globalNames);
+    }
 
     // ===== Entorno por función =====
-    private static class Env {
+    private class Env {
         final IRFunction fn;
         final Map<String, IRVar> vars = new HashMap<>();
         Env(IRFunction fn){ this.fn = fn; }
+
         IRVar ensureVar(String name){
             IRVar v = vars.get(name);
             if (v == null) {
                 v = new IRVar(name);
                 vars.put(name, v);
-                fn.addLocal(name);
+                if (globalNames.contains(name)) {
+                    // Global: NO la declares como local; solo anótala en el módulo
+                    mod.globals.add(name);
+                } else {
+                    // Local real de la función
+                    fn.addLocal(name);
+                }
             }
             return v;
         }
@@ -259,32 +272,37 @@ public class CodeGenerator {
             return;
         }
 
-        // --- Tortuga / Dibujo ---
-        if (s instanceof Avanza)         { callTurtle1(env, "avanza",       node(s, "getExpr","expr","e","distance","dist","value")); return; }
-        if (s instanceof Retrocede)      { callTurtle1(env, "retrocede",    node(s, "getExpr","expr","e","distance","dist","value")); return; }
-        if (s instanceof GiraDerecha)    { callTurtle1(env, "giraDerecha",  node(s, "getExpr","expr","e","angle","degrees","value")); return; }
-        if (s instanceof GiraIzquierda)  { callTurtle1(env, "giraIzquierda",node(s, "getExpr","expr","e","angle","degrees","value")); return; }
-        if (s instanceof PonPos)         { callTurtle2(env, "ponPos",       node(s, "getX","x","xExpr","exprX","first"), node(s, "getY","y","yExpr","exprY","second")); return; }
-        if (s instanceof PonRumbo)       { callTurtle1(env, "ponRumbo",     node(s, "getExpr","expr","e","angle","degrees","value")); return; }
+     // --- Tortuga / Dibujo ---
+        if (s instanceof Avanza)         { callTurtle1(env, "avanza", s); return; }
+        if (s instanceof Retrocede)      { callTurtle1(env, "retrocede", s); return; }
+        if (s instanceof GiraDerecha)    { callTurtle1(env, "giraDerecha", s); return; }
+        if (s instanceof GiraIzquierda)  { callTurtle1(env, "giraIzquierda", s); return; }
+        if (s instanceof PonPos)         { callTurtle2(env, "ponPos", s, s); return; }
+        if (s instanceof PonRumbo)       { callTurtle1(env, "ponRumbo", s); return; }
         if (s instanceof Rumbo)          { env.fn.code.add(new IRCall("turtle.rumbo", Collections.<IRValue>emptyList(), null)); return; }
-        if (s instanceof PonX)           { callTurtle1(env, "ponX",         node(s, "getExpr","expr","xExpr","e","value")); return; }
-        if (s instanceof PonY)           { callTurtle1(env, "ponY",         node(s, "getExpr","expr","yExpr","e","value")); return; }
+        if (s instanceof PonX)           { callTurtle1(env, "ponX", s); return; }
+        if (s instanceof PonY)           { callTurtle1(env, "ponY", s); return; }
         if (s instanceof BajaLapiz)      { env.fn.code.add(new IRCall("turtle.bajaLapiz", Collections.<IRValue>emptyList(), null)); return; }
         if (s instanceof SubeLapiz)      { env.fn.code.add(new IRCall("turtle.subeLapiz", Collections.<IRValue>emptyList(), null)); return; }
-        if (s instanceof PonColorLapiz)  { callTurtle1(env, "ponColorLapiz",node(s, "getExpr","expr","e","color","value")); return; }
+        if (s instanceof PonColorLapiz)  { callTurtle1(env, "ponColorLapiz", s); return; }
         if (s instanceof Centro)         { env.fn.code.add(new IRCall("turtle.centro", Collections.<IRValue>emptyList(), null)); return; }
-        if (s instanceof Espera)         { callTurtle1(env, "espera",       node(s, "getExpr","expr","e","ms","time","value")); return; }
+        if (s instanceof Espera)         { callTurtle1(env, "espera", s); return; }
         if (s instanceof OcultaTortuga)  { env.fn.code.add(new IRCall("turtle.oculta", Collections.<IRValue>emptyList(), null)); return; }
 
         // Fallback
         env.fn.code.add(new IRNop().c("stmt no mapeado: " + s.getClass().getSimpleName()));
     }
 
-    private void callTurtle1(Env env, String op, ASTNode e) {
+    private void callTurtle1(Env env, String op, ASTNode eNodeOwner) {
+        ASTNode e = nodeOrFirst(eNodeOwner,
+                "getExpr","expr","e","distance","dist","value","arg","argument","node","angle","degrees","xExpr","yExpr");
         IRValue v = genExpr(env, e);
         env.fn.code.add(new IRCall("turtle." + op, Collections.singletonList(v), null));
     }
-    private void callTurtle2(Env env, String op, ASTNode e1, ASTNode e2) {
+
+    private void callTurtle2(Env env, String op, ASTNode owner1, ASTNode owner2) {
+        ASTNode e1 = nodeOrFirst(owner1, "getX","x","xExpr","exprX","first","expr","e","arg","argument","node");
+        ASTNode e2 = nodeOrFirst(owner2, "getY","y","yExpr","exprY","second","expr","e","arg","argument","node");
         IRValue v1 = genExpr(env, e1), v2 = genExpr(env, e2);
         env.fn.code.add(new IRCall("turtle." + op, Arrays.asList(v1, v2), null));
     }
@@ -543,6 +561,27 @@ return t;
         }
         return out;
     }
+    
+ // Devuelve el ASTNode pedido por nombre o, si no existe, el primer campo ASTNode encontrado.
+    private static ASTNode nodeOrFirst(Object o, String... names) {
+        ASTNode n = node(o, names);
+        if (n != null) return n;
+
+        if (o == null) return null;
+        Class<?> k = o.getClass();
+        while (k != null) {
+            for (Field f : k.getDeclaredFields()) {
+                try {
+                    f.setAccessible(true);
+                    Object v = f.get(o);
+                    if (v instanceof ASTNode) return (ASTNode) v;
+                } catch (Exception ignored) {}
+            }
+            k = k.getSuperclass();
+        }
+        return null;
+    }
+
     
     
     @SuppressWarnings("unchecked")

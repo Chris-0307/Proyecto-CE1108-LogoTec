@@ -36,8 +36,8 @@ public class CodegenRunner {
             List<ASTNode> body = (List<ASTNode>) tree.body;
 
             Map<String, ProcedureDef> procTable = parser.getProcTable();
-
-            CodeGenerator cg = new CodeGenerator();
+            Set<String> globals = parser.getGlobalNames();
+            CodeGenerator cg = new CodeGenerator(globals);
             cg.generateProgram(body, procTable);
             IRModule mod = cg.getModule();
 

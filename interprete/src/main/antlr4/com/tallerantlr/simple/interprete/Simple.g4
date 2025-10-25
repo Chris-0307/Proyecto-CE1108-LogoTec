@@ -19,8 +19,8 @@ grammar Simple;
     Map<String, Object> globals = new HashMap<>();
     Map<String, ProcedureDef> procTable = new HashMap<>();
 
-    // int varDeclCount = 0;      // ← REMOVE
-    int hazCount = 0;             // ← NEW
+    
+    int hazCount = 0;             
 
     static String sig(String name, int arity) { return name + "#" + arity; }
 
@@ -30,6 +30,9 @@ grammar Simple;
      public Map<String, ProcedureDef> getProcTable() {
         return procTable;
     }
+    
+    public java.util.Set<String> getGlobalNames() { return globals.keySet(); }
+    
 }
 
 
@@ -253,20 +256,21 @@ returns [ASTNode node]
 
 hazStmt
 returns [ASTNode node]
-    :   // HAZ con inicialización en la misma línea
+    :   // HAZ con inicialización
         HAZ id=ID v=expression (SEP)?
         {
             hazCount++;
+            globals.put($id.text, null);   // <<< AÑADIR
             $node = new HazAssign($id.text, $v.node);
         }
-    |   // HAZ solo declara (sin valor)
+    |   // HAZ solo declara
         HAZ id=ID (SEP)?
         {
             hazCount++;
+            globals.put($id.text, null);   // <<< AÑADIR
             $node = new HazAssign($id.text, null);
         }
     ;
-
 
 // println( expr )
 printlnStmt

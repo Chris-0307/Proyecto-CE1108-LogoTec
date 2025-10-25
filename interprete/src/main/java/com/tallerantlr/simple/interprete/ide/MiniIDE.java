@@ -161,9 +161,11 @@ public class MiniIDE extends JFrame {
             // ⛳️ CAMBIO CLAVE: usar el getter en vez de acceder al campo
             java.util.Map<String, com.tallerantlr.simple.interprete.ast.ProcedureDef> procTable =
                     parser.getProcTable();
+            
+            java.util.Set<String> globals = parser.getGlobalNames();
 
             com.tallerantlr.simple.interprete.codegen.CodeGenerator cg =
-                    new com.tallerantlr.simple.interprete.codegen.CodeGenerator();
+                    new com.tallerantlr.simple.interprete.codegen.CodeGenerator(globals);
             cg.generateProgram(body, procTable);
 
             com.tallerantlr.simple.interprete.ir.IR.IRModule mod = cg.getModule();
