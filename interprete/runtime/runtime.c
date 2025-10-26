@@ -27,6 +27,16 @@ void turtle_subeLapiz(void)      { printf("sube lapiz\n"); }
 void turtle_ponColorLapiz(int c) { printf("color=%d\n", c); }
 void turtle_espera(int ms)       { printf("espera %d ms\n", ms); }
 
+void turtle_oculta(void) {
+    printf("oculta tortuga\n");
+}
+void turtle_ponRumbo(int deg) {
+    printf("pon rumbo = %d grados\n", deg);
+}
+void turtle_retrocede(int d) {
+    printf("retrocede %d unidades\n", d);
+}
+
 // ----- random/azar -----
 int runtime_azar(int max) {
     static int seeded = 0;
@@ -46,3 +56,4 @@ int runtime_pow(int base, int exp) {
     }
     return r;
 }
+
