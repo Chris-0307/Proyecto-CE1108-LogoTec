@@ -44,7 +44,8 @@ public class MiniIDE extends JFrame {
 
     // --- Patrones Regex para parsear la salida del .exe ---
     private static final Pattern PATTERN_AVANZA = Pattern.compile("la tortuga avanzó (\\d+) unidades");
-    private static final Pattern PATTERN_RETROCEDE = Pattern.compile("retrocede (\\d+) unidades");
+    private static final Pattern PATTERN_RETROCEDE =
+    	    Pattern.compile("la tortuga retroced(?:io|ió) (\\d+) unidades");
     private static final Pattern PATTERN_GIRA_DERECHA = Pattern.compile("la tortuga giró a la derecha (\\d+) grados");
     private static final Pattern PATTERN_GIRA_IZQUIERDA = Pattern.compile("la tortuga giró a la izquierda (\\d+) grados");
     private static final Pattern PATTERN_PON_COLOR = Pattern.compile("color=(\\w+)");

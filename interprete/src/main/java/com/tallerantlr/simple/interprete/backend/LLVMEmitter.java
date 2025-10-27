@@ -128,45 +128,55 @@ public class LLVMEmitter {
         }
         // store de params
         for (String p : f.params) {
-            sb.append("  store i32 %").append(p).append(", i32* %").append(p).append(".alloca\n");
-        }
+        	sb.append("  store i32 %").append(p).append(", ptr %").append(p).append(".alloca\n");        
+        	}
 
-        boolean needCont = false;
+        boolean afterTerm = false;     // true si el bloque anterior terminó (br/ret)
         int contCount = 0;
 
-        // labels: usaremos nombres directos
         for (IRInstr ins : f.code) {
-            if (needCont && !(ins instanceof IRLabelInstr)) {
-                String c = "_cont" + (++contCount);
-                sb.append("  br label %").append(c).append("\n");
-                sb.append(c).append(":\n");
-                needCont = false;
-            }
 
+            // 1) Si viene un LABEL y no se terminó el bloque anterior, cierra con br
             if (ins instanceof IRLabelInstr) {
                 IRLabelInstr L = (IRLabelInstr) ins;
+                if (!afterTerm) {
+                    sb.append("  br label %").append(L.label.name).append("\n");
+                }
                 sb.append(L.label.name).append(":\n");
+                afterTerm = false;
                 continue;
             }
+
+            // 2) Si el bloque anterior terminó y lo que sigue no es LABEL, abre un bloque nuevo
+            if (afterTerm) {
+                String c = "_cont" + (++contCount);
+                sb.append(c).append(":\n");
+                afterTerm = false;
+            }
+
+            // 3) Terminadores
             if (ins instanceof IRGoto) {
                 IRGoto g = (IRGoto) ins;
                 sb.append("  br label %").append(g.target.name).append("\n");
-                needCont = true;
+                afterTerm = true;
                 continue;
             }
+
             if (ins instanceof IRIfGoto) {
                 IRIfGoto ig = (IRIfGoto) ins;
-                // si cond no es i1, comparamos != 0
                 String c = asValue(ig.cond, VType.BOOL);
-                sb.append("  br i1 ").append(c).append(", label %")
-                  .append(ig.target.name).append(", label %");
                 String cfall = "_cont" + (++contCount);
-                sb.append(cfall).append("\n");
-                sb.append(cfall).append(":\n");
+                sb.append("  br i1 ").append(c)
+                  .append(", label %").append(ig.target.name)
+                  .append(", label %").append(cfall).append("\n");
+                sb.append(cfall).append(":\n");   // empezamos el bloque de caída
+                afterTerm = false;
                 continue;
             }
+
             if (ins instanceof IRReturn) {
                 sb.append("  ret void\n");
+                afterTerm = true;
                 continue;
             }
             if (ins instanceof IRPrintln) {
@@ -203,24 +213,19 @@ public class LLVMEmitter {
                 if (m.dst instanceof IRVar) {
                     String ptr = ptrOf((IRVar)m.dst);
                     String v = asValue(m.src, VType.INT);
-                    sb.append("  store i32 ").append(v).append(", i32* ").append(ptr).append("\n");
-                } else if (m.dst instanceof IRTemp) {
+                    sb.append("  store i32 ").append(v).append(", ptr ").append(ptr).append("\n");
+                    } else if (m.dst instanceof IRTemp) {
                     String dst = "%"+((IRTemp)m.dst).name;
                     VType vt = guessType(m.src);
-                    String v = asValue(m.src, vt);
-                    // guarda el valor en un %temp SSA (normalizando a i32 si hace falta)
+                    String v  = asValue(m.src, vt);
+
                     if (vt == VType.BOOL) {
-                        // guardaremos como i1 pero recordamos tipo
+                        // ✅ SOLO una instrucción con opcode
                         tempType.put(((IRTemp)m.dst).name, VType.BOOL);
-                        sb.append("  ").append(dst).append(" = ").append(v.startsWith("%")||v.equals("true")||v.equals("false")?"":"").append(v).append("\n");
-                        // Nota: asValue(BOOL) devuelve algo como %tN (i1), así que sólo asignamos alias:
-                        // pero LLVM no permite "x = %y". Mejora: si es temp->temp, mejor mapea: %dst = add i1 0, %src? Simplifiquemos:
-                        // Haré un zext a i1->i1 redundante para cumplir sintaxis:
                         sb.append("  ").append(dst).append(" = or i1 ").append(v).append(", false\n");
                     } else {
                         tempType.put(((IRTemp)m.dst).name, VType.INT);
                         if (v.equals("true") || v.equals("false")) {
-                            // boolean literal → zext a i32
                             String b = fresh();
                             sb.append("  ").append(b).append(" = zext i1 ").append(v).append(" to i32\n");
                             sb.append("  ").append(dst).append(" = add i32 ").append(b).append(", 0\n");
@@ -229,6 +234,7 @@ public class LLVMEmitter {
                         }
                     }
                 }
+
                 continue;
             }
             if (ins instanceof IRBinOpInstr) {
@@ -452,7 +458,7 @@ public class LLVMEmitter {
         if (v instanceof IRVar) {
             String p = ptrOf((IRVar)v);
             String tmp = fresh();
-            sb.append("  ").append(tmp).append(" = load i32, i32* ").append(p).append("\n");
+            sb.append("  ").append(tmp).append(" = load i32, ptr ").append(p).append("\n");
             if (want == VType.BOOL) {
                 String cmp = fresh();
                 sb.append("  ").append(cmp).append(" = icmp ne i32 ").append(tmp).append(", 0\n");
