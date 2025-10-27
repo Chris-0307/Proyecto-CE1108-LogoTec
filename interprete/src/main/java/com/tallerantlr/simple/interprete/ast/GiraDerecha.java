@@ -1,5 +1,7 @@
 package com.tallerantlr.simple.interprete.ast;
 
+import com.tallerantlr.simple.interprete.TurtleState;
+import com.tallerantlr.simple.interprete.ide.InterpreterRunner; // Importar
 import java.util.Map;
 
 public class GiraDerecha implements ASTNode {
@@ -10,15 +12,22 @@ public class GiraDerecha implements ASTNode {
     }
 
     @Override
-    public Object execute(Map<String, Object> symbolTable) {
-        Object v = angleExpr.execute(symbolTable);
+    public Object execute(Map<String, Object> context) {
+        TurtleState turtleState = (TurtleState) context.get(InterpreterRunner.TURTLE_STATE_KEY); // Usar clave de Runner
+        // InterpreterRunner.DrawingDelegate delegate = (InterpreterRunner.DrawingDelegate) context.get(InterpreterRunner.DRAWING_DELEGATE_KEY); // No necesario aquí pero lo obtenemos por consistencia al evaluar expr
+
+        if (turtleState == null) {
+             throw new IllegalStateException("TurtleState no encontrado en el contexto");
+        }
+
+        Object v = angleExpr.execute(context);
         if (!(v instanceof Number)) {
             String t = (v == null) ? "null" : v.getClass().getSimpleName();
-            throw new RuntimeException("Error semántico: 'giraderecha' requiere un número (grados) (actual: " + t + ")");
+            throw new SemanticError("Error: 'giraderecha' requiere un número (grados) (actual: " + t + ")", 0, 0);
         }
-        int deg = ((Number) v).intValue();
-        System.out.println("la tortuga giró a la derecha " + deg + " grados");
-        // Más adelante aquí actualizarán el estado (ángulo) de la tortuga.
+        double deg = ((Number) v).doubleValue();
+
+        turtleState.turnRight(deg); // Actualizar estado
         return null;
     }
 }

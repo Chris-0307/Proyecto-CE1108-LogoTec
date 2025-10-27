@@ -1,19 +1,19 @@
 package com.tallerantlr.simple.interprete.ast;
 
+import com.tallerantlr.simple.interprete.TurtleState;
+import com.tallerantlr.simple.interprete.ide.InterpreterRunner; // Importar
 import java.util.Map;
 
 public class SubeLapiz implements ASTNode {
-    private static final String KEY_PEN = "__pen__";  // "down" | "up" | null
 
     @Override
-    public Object execute(Map<String, Object> symbolTable) {
-        Object pen = symbolTable.get(KEY_PEN);
-        if ("up".equals(pen)) {
-            System.out.println("el lápiz ya estaba arriba; no se cambia el estado");
-            return null;
+    public Object execute(Map<String, Object> context) {
+        TurtleState turtleState = (TurtleState) context.get(InterpreterRunner.TURTLE_STATE_KEY); // Usar clave de Runner
+        if (turtleState == null) {
+            throw new IllegalStateException("TurtleState no encontrado en el contexto");
         }
-        symbolTable.put(KEY_PEN, "up");
-        System.out.println("la tortuga subió el lápiz; no se dibujará al moverse");
+
+        turtleState.setPenDown(false); // Actualizar estado
         return null;
     }
 }

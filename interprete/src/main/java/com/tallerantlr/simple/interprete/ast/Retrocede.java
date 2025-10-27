@@ -1,6 +1,9 @@
 package com.tallerantlr.simple.interprete.ast;
 
+import com.tallerantlr.simple.interprete.TurtleState;
+import com.tallerantlr.simple.interprete.ide.InterpreterRunner; // Importar
 import java.util.Map;
+import java.awt.Color; // Importar
 
 public class Retrocede implements ASTNode {
     private final ASTNode amountExpr;
@@ -10,15 +13,29 @@ public class Retrocede implements ASTNode {
     }
 
     @Override
-    public Object execute(Map<String, Object> symbolTable) {
-        Object v = amountExpr.execute(symbolTable);
+    public Object execute(Map<String, Object> context) {
+        TurtleState turtleState = (TurtleState) context.get(InterpreterRunner.TURTLE_STATE_KEY); // Usar clave de Runner
+        InterpreterRunner.DrawingDelegate delegate = (InterpreterRunner.DrawingDelegate) context.get(InterpreterRunner.DRAWING_DELEGATE_KEY); // Usar clave de Runner
+
+        if (turtleState == null || delegate == null) {
+            throw new IllegalStateException("TurtleState o DrawingDelegate no encontrados en el contexto");
+        }
+
+        Object v = amountExpr.execute(context);
         if (!(v instanceof Number)) {
             String t = (v == null) ? "null" : v.getClass().getSimpleName();
-            throw new RuntimeException("Error semántico: 'retrocede' requiere un número (actual: " + t + ")");
+            throw new SemanticError("Error: 'retrocede' requiere un número (actual: " + t + ")", 0, 0);
         }
-        int n = ((Number) v).intValue();
-        System.out.println("la tortuga retrocedió " + n + " unidades");
-        // Más adelante aquí actualizarán el estado de la tortuga
+        double n = ((Number) v).doubleValue();
+
+        double startX = turtleState.getX();
+        double startY = turtleState.getY();
+
+        turtleState.moveForward(-n); // Mover hacia atrás
+
+        if (turtleState.isPenDown()) {
+            delegate.addLine(startX, startY, turtleState.getX(), turtleState.getY(), turtleState.getPenColor());
+        }
         return null;
     }
 }

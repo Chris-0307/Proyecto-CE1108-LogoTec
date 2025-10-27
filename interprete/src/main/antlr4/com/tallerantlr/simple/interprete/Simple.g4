@@ -16,14 +16,14 @@ grammar Simple;
 }
 
 @parser::members {
-    Map<String, Object> globals = new HashMap<>();
+    public Map<String, Object> globals = new HashMap<>();
     Map<String, ProcedureDef> procTable = new HashMap<>();
 
     
     int hazCount = 0;             
 
     static String sig(String name, int arity) { return name + "#" + arity; }
-
+	public int getHazCount() { return hazCount; }
     public boolean executeOnParse = true;
     public boolean enforceVarDecl = true;   // mantenemos el nombre por compatibilidad
     
