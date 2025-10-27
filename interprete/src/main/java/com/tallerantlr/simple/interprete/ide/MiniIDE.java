@@ -47,13 +47,12 @@ public class MiniIDE extends JFrame {
     private static final Pattern PATTERN_RETROCEDE = Pattern.compile("retrocede (\\d+) unidades");
     private static final Pattern PATTERN_GIRA_DERECHA = Pattern.compile("la tortuga giró a la derecha (\\d+) grados");
     private static final Pattern PATTERN_GIRA_IZQUIERDA = Pattern.compile("la tortuga giró a la izquierda (\\d+) grados");
-    private static final Pattern PATTERN_PON_COLOR = Pattern.compile("color=(\\w+)"); // Captura el nombre del color
+    private static final Pattern PATTERN_PON_COLOR = Pattern.compile("color=(\\w+)");
     private static final Pattern PATTERN_PON_POS = Pattern.compile("tortuga POS=\\((\\d+),(\\d+)\\)");
     private static final Pattern PATTERN_PON_X = Pattern.compile("tortuga X=(\\d+)");
     private static final Pattern PATTERN_PON_Y = Pattern.compile("tortuga Y=(\\d+)");
     private static final Pattern PATTERN_PON_RUMBO = Pattern.compile("pon rumbo = (\\d+) grados");
     private static final Pattern PATTERN_ESPERA = Pattern.compile("espera (\\d+) ms");
-    // Comandos sin argumentos (solo necesitamos verificar el inicio)
     private static final String CMD_BAJA_LAPIZ = "baja lapiz";
     private static final String CMD_SUBE_LAPIZ = "sube lapiz";
     private static final String CMD_CENTRO = "tortuga al centro";
@@ -62,52 +61,33 @@ public class MiniIDE extends JFrame {
 
     public MiniIDE() {
         super("Logo-lite IDE");
-        // ... (resto del constructor sin cambios: editor, consola, botones, layout) ...
-         // Editor (sin cambios)
+        // Editor
         editor.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-        editor.setText("// Demo\nhaz a 3\nprintln(\"hola\")\n"); // Ejemplo inicial
+        editor.setText("// Prueba Completa de Comandos de Dibujo\nhaz lado 80 // Variable requerida\n\n// --- 1. Dibuja un cuadrado ROJO con movimiento relativo ---\n// Testa: poncl, bajalapiz, av, gd\nponcl \"rojo\"\nbajalapiz\nav lado\ngd 90\nav lado\ngd 90\nav lado\ngd 90\nav lado\ngd 90 // Termina en la posición inicial, mirando igual\n\n// --- 2. Moverse sin dibujar ---\n// Testa: subelapiz, gi, re\nsubelapiz\ngi 90    // Gira a la izquierda\nre 100    // Retrocede 100 (sin dibujar)\n\n// --- 3. Dibuja una línea AZUL ---\n// Testa: poncl, bajalapiz, av\nponcl \"azul\"\nbajalapiz\nav 50\n\n// --- 4. Moverse a una esquina con posicionamiento absoluto ---\n// Testa: subelapiz, ponpos\nsubelapiz\nponpos [50 50] // Moverse a la coordenada (50, 50) sin dibujar\n\n// --- 5. Dibujar una \"L\" NEGRA usando ponX y ponY ---\n// Testa: poncl, bajalapiz, ponx, pony\nponcl \"negro\"\nbajalapiz\nponx 100  // Dibuja línea horizontal de (50, 50) a (100, 50)\npony 100  // Dibuja línea vertical de (100, 50) a (100, 100)\n\n// --- 6. Volver al centro y pausar ---\n// Testa: centro, espera\nsubelapiz\ncentro    // Mover la tortuga al centro\nespera 60 // Pausa por 1 segundo (60/60)\n\n// --- 7. Dibujar una línea apuntando hacia arriba ---\n// Testa: ponrumbo, bajalapiz, av\nponrumbo 90 // Apuntar hacia arriba (asumiendo 90=arriba)\nbajalapiz\nav 120\n\n// --- 8. Mover a la posición inicial ---\n// Testa: ot\not // Mover a la esquina superior izquierda\n"); // Ejemplo inicial
 
-        // Consola (sin cambios)
+        // Consola
         console.setEditable(false);
         console.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
         console.setBackground(new Color(250, 250, 250));
         console.setBorder(new EmptyBorder(6, 6, 6, 6));
 
-        // Botones (sin cambios en su creación y listeners básicos)
+        // Botones
         JButton runBtn = new JButton("Ejecutar");
         runBtn.addActionListener(e -> runProgram());
-
         JButton treeBtn = new JButton("Actualizar árbol");
         treeBtn.addActionListener(e -> updateParseTree());
-
         JButton irBtn = new JButton("Generar IR");
         irBtn.addActionListener(e -> generateIR());
-
         JButton exeBtn = new JButton("Generar EXE (LLVM)");
         exeBtn.addActionListener(e -> generateExe());
 
-        // Layout (sin cambios)
-        JSplitPane rightMiddle = new JSplitPane(
-                JSplitPane.VERTICAL_SPLIT,
-                wrapWithTitled(new JScrollPane(editor), "Editor"),
-                wrapWithTitled(new JScrollPane(console), "Consola")
-        );
+        // Layout
+        JSplitPane rightMiddle = new JSplitPane(JSplitPane.VERTICAL_SPLIT, wrapWithTitled(new JScrollPane(editor), "Editor"), wrapWithTitled(new JScrollPane(console), "Consola"));
         rightMiddle.setResizeWeight(0.7);
-
-        JSplitPane right = new JSplitPane(
-                JSplitPane.HORIZONTAL_SPLIT,
-                rightMiddle,
-                wrapWithTitled(parsePanel, "Árbol de parseo")
-        );
+        JSplitPane right = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, rightMiddle, wrapWithTitled(parsePanel, "Árbol de parseo"));
         right.setResizeWeight(0.65);
-
-        JSplitPane main = new JSplitPane(
-                JSplitPane.HORIZONTAL_SPLIT,
-                wrapWithTitled(canvas, "Lienzo"), // Canvas ya creado con TurtleState
-                right
-        );
+        JSplitPane main = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, wrapWithTitled(canvas, "Lienzo"), right);
         main.setResizeWeight(0.35);
-
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topBar.add(runBtn);
         topBar.add(treeBtn);
@@ -125,7 +105,6 @@ public class MiniIDE extends JFrame {
 
     // wrapWithTitled (sin cambios)
     private static JComponent wrapWithTitled(JComponent c, String title) {
-        // ... (código sin cambios)
         JPanel p = new JPanel(new BorderLayout());
         p.setBorder(BorderFactory.createTitledBorder(title));
         p.add(c, BorderLayout.CENTER);
@@ -133,10 +112,10 @@ public class MiniIDE extends JFrame {
     }
 
     // Resaltado de errores (sin cambios)
-    private void clearEditorHighlights() { /* ... */ editor.getHighlighter().removeAllHighlights();}
-    private void highlightError(int line, int column) { /* ... (código sin cambios) ... */
+    private void clearEditorHighlights() { editor.getHighlighter().removeAllHighlights();}
+    private void highlightError(int line, int column) {
      try {
-            int lineIdx = Math.max(1, line) - 1;     // a 0-index
+            int lineIdx = Math.max(1, line) - 1;
             int startOfLine = editor.getLineStartOffset(lineIdx);
             int endOfLine   = editor.getLineEndOffset(lineIdx);
             editor.getHighlighter().addHighlight(startOfLine, endOfLine, LINE_PAINTER);
@@ -149,10 +128,10 @@ public class MiniIDE extends JFrame {
             if (r != null) editor.scrollRectToVisible(r);
         } catch (BadLocationException ignored) {}
     }
-    private SyntaxErrorHandler uiHighlighterHandler() { /* ... */ return (line, col, msg) -> SwingUtilities.invokeLater(() -> highlightError(line, col));}
+    private SyntaxErrorHandler uiHighlighterHandler() { return (line, col, msg) -> SwingUtilities.invokeLater(() -> highlightError(line, col));}
 
     // Acciones generateIR, generateExe, updateParseTree (sin cambios)
-    private void generateIR() { /* ... (código sin cambios) ... */
+    private void generateIR() {
          console.setText("");
         try {
             CharStream in = CharStreams.fromString(editor.getText());
@@ -178,7 +157,7 @@ public class MiniIDE extends JFrame {
             t.printStackTrace();
         }
     }
-    private void generateExe() { /* ... (código sin cambios) ... */
+    private void generateExe() {
         console.setText("");
         try {
             CharStream in = CharStreams.fromString(editor.getText());
@@ -214,8 +193,8 @@ public class MiniIDE extends JFrame {
             t.printStackTrace();
         }
     }
-    private boolean isWindows() { /* ... */ return System.getProperty("os.name","").toLowerCase().contains("win");}
-    private void updateParseTree() { /* ... (código sin cambios) ... */
+    private boolean isWindows() { return System.getProperty("os.name","").toLowerCase().contains("win");}
+    private void updateParseTree() {
         clearEditorHighlights();
         try {
             InterpreterRunner.parseOnly(
@@ -231,65 +210,48 @@ public class MiniIDE extends JFrame {
 
     // ========== MÉTODO runProgram COMPLETAMENTE REESCRITO ==========
     private void runProgram() {
-        console.setText(""); // Limpiar consola
+        console.setText("");
         clearEditorHighlights();
-        // updateParseTree(); // Opcional: ¿Mostrar árbol al ejecutar .exe? Lo quitamos por ahora.
-
-        // Resetear estado y limpiar lienzo ANTES de ejecutar
         initialTurtleState.reset();
         canvas.clearDrawing();
 
-        // Ejecutar .exe en un hilo separado (SwingWorker)
-        new SwingWorker<Void, String>() { // Cambiado a SwingWorker<Void, String> para publicar líneas de salida
-
+        new SwingWorker<Void, String>() {
             @Override
             protected Void doInBackground() throws Exception {
                 Path exePath = Paths.get("build", isWindows() ? "program.exe" : "program");
                 if (!exePath.toFile().exists()) {
                     throw new RuntimeException("Error: No se encontró el archivo ejecutable en " + exePath.toAbsolutePath());
                 }
-
-                // Crear el proceso
                 ProcessBuilder pb = new ProcessBuilder(exePath.toAbsolutePath().toString());
-                pb.redirectErrorStream(true); // Combinar salida estándar y de error
-
+                pb.redirectErrorStream(true);
                 Process process = pb.start();
-
-                // Leer la salida del proceso línea por línea
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
-                        publish(line); // Enviar la línea al método process() para procesarla en el EDT
+                        publish(line);
                     }
                 }
-
-                // Esperar a que el proceso termine (con timeout por si acaso)
-                boolean finished = process.waitFor(10, TimeUnit.SECONDS); // Timeout de 10 segundos
+                boolean finished = process.waitFor(10, TimeUnit.SECONDS);
                 if (!finished) {
-                    process.destroy(); // Forzar terminación si se excede el timeout
+                    process.destroy();
                     throw new RuntimeException("Error: La ejecución del .exe excedió el tiempo límite.");
                 }
-
                 int exitCode = process.exitValue();
                 if (exitCode != 0) {
                      publish("[ERR] El proceso .exe terminó con código de error: " + exitCode);
                 } else {
                      publish("[INFO] Ejecución del .exe completada.");
                 }
-
                 return null;
             }
 
-            // Este método se ejecuta en el EDT para cada línea publicada
             @Override
             protected void process(List<String> chunks) {
                 for (String line : chunks) {
-                    console.append(line + "\n"); // Mostrar la salida cruda en la consola
+                    console.append(line + "\n");
                     try {
-                        // Parsear el comando y actualizar estado/lienzo
                         executeCommandFromOutput(line, initialTurtleState, canvas);
                     } catch (Exception e) {
-                        // Mostrar error de parseo en consola, pero no detener el proceso
                         console.append("[PARSE ERR] " + e.getMessage() + "\n");
                     }
                 }
@@ -298,171 +260,114 @@ public class MiniIDE extends JFrame {
             @Override
             protected void done() {
                 try {
-                    get(); // Llamar a get() para detectar excepciones ocurridas en doInBackground
+                    get();
                 } catch (Exception e) {
-                    // Mostrar error de ejecución del proceso en la consola
                     console.append("[EXEC ERR] " + e.getMessage() + "\n");
-                    e.printStackTrace(new PrintStream(new ConsoleOutputStream(console, true))); // Imprimir stack trace
+                    e.printStackTrace(new PrintStream(new ConsoleOutputStream(console, true)));
                 } finally {
-                    // Asegurarse de repintar el canvas al final, incluso si hubo errores
-                    canvas.repaint();
+                    canvas.repaint(); // Repintar UNA VEZ al final (mejor rendimiento)
                 }
             }
         }.execute();
     }
 
-    // ========== NUEVO MÉTODO AUXILIAR para parsear salida y dibujar ==========
- // Método auxiliar MODIFICADO con depuración
+    // ========== MÉTODO AUXILIAR para parsear salida y dibujar (CON REPAINT) ==========
     private void executeCommandFromOutput(String line, TurtleState turtleState, CanvasPanel canvas) {
-        if (line == null || line.isBlank()) {
-            return;
-        }
-
+        if (line == null || line.isBlank()) return;
         String trimmedLine = line.trim();
         Matcher matcher;
-        boolean commandMatched = false; // Bandera para saber si reconocimos algo
+        // Removimos la depuración System.out.println para limpiar la salida
 
-        // --- Mensaje General de Depuración ---
-        // Imprime en la consola del SISTEMA (la de Eclipse/terminal), no en la del IDE
-        System.out.println("Procesando línea: \"" + trimmedLine + "\" | Lápiz abajo? " + turtleState.isPenDown() + " | Pos: (" + String.format("%.1f", turtleState.getX()) + "," + String.format("%.1f", turtleState.getY()) + ") | Ángulo: " + String.format("%.1f", turtleState.getAngle()) + " | Color: " + turtleState.getPenColor());
-
-
-        // Intentar hacer match con cada patrón
-        if ((matcher = PATTERN_AVANZA.matcher(trimmedLine)).find()) { // Usar find() por si hay caracteres extraños
-            commandMatched = true;
-            System.out.println("  -> MATCH: AVANZA");
+        if ((matcher = PATTERN_AVANZA.matcher(trimmedLine)).find()) {
             double amount = Double.parseDouble(matcher.group(1));
-            double startX = turtleState.getX();
-            double startY = turtleState.getY();
+            double startX = turtleState.getX(), startY = turtleState.getY();
             turtleState.moveForward(amount);
-            System.out.println("     Nueva Pos: (" + String.format("%.1f", turtleState.getX()) + "," + String.format("%.1f", turtleState.getY()) + ")");
             if (turtleState.isPenDown()) {
-                final double endX = turtleState.getX();
-                final double endY = turtleState.getY();
-                final Color color = turtleState.getPenColor();
-                System.out.println("     DIBUJANDO línea AV de ("+String.format("%.1f",startX)+","+String.format("%.1f",startY)+") a ("+String.format("%.1f",endX)+","+String.format("%.1f",endY)+") Color: "+color);
-                SwingUtilities.invokeLater(() -> canvas.addLine(startX, startY, endX, endY, color));
+                final double endX = turtleState.getX(), endY = turtleState.getY(); final Color color = turtleState.getPenColor();
+                SwingUtilities.invokeLater(() -> {
+                    canvas.addLine(startX, startY, endX, endY, color);
+                    canvas.repaint(); // <<<--- REPAINT AQUÍ
+                });
             }
-        } else if ((matcher = PATTERN_RETROCEDE.matcher(trimmedLine)).find()) { // Usar find()
-            commandMatched = true;
-            System.out.println("  -> MATCH: RETROCEDE");
+        } else if ((matcher = PATTERN_RETROCEDE.matcher(trimmedLine)).find()) {
             double amount = Double.parseDouble(matcher.group(1));
-            double startX = turtleState.getX();
-            double startY = turtleState.getY();
+            double startX = turtleState.getX(), startY = turtleState.getY();
             turtleState.moveForward(-amount);
-            System.out.println("     Nueva Pos: (" + String.format("%.1f", turtleState.getX()) + "," + String.format("%.1f", turtleState.getY()) + ")");
             if (turtleState.isPenDown()) {
-                 final double endX = turtleState.getX();
-                final double endY = turtleState.getY();
-                final Color color = turtleState.getPenColor();
-                 System.out.println("     DIBUJANDO línea RE de ("+String.format("%.1f",startX)+","+String.format("%.1f",startY)+") a ("+String.format("%.1f",endX)+","+String.format("%.1f",endY)+") Color: "+color);
-                SwingUtilities.invokeLater(() -> canvas.addLine(startX, startY, endX, endY, color));
+                final double endX = turtleState.getX(), endY = turtleState.getY(); final Color color = turtleState.getPenColor();
+                SwingUtilities.invokeLater(() -> {
+                    canvas.addLine(startX, startY, endX, endY, color);
+                    canvas.repaint(); // <<<--- REPAINT AQUÍ
+                });
             }
-        } else if ((matcher = PATTERN_GIRA_DERECHA.matcher(trimmedLine)).find()) { // Usar find()
-            commandMatched = true;
-            System.out.println("  -> MATCH: GIRA DERECHA");
-            double angle = Double.parseDouble(matcher.group(1));
-            turtleState.turnRight(angle);
-            System.out.println("     Nuevo Ángulo: " + String.format("%.1f", turtleState.getAngle()));
-        } else if ((matcher = PATTERN_GIRA_IZQUIERDA.matcher(trimmedLine)).find()) { // Usar find()
-            commandMatched = true;
-            System.out.println("  -> MATCH: GIRA IZQUIERDA");
-            double angle = Double.parseDouble(matcher.group(1));
-            turtleState.turnLeft(angle);
-             System.out.println("     Nuevo Ángulo: " + String.format("%.1f", turtleState.getAngle()));
-        } else if ((matcher = PATTERN_PON_COLOR.matcher(trimmedLine)).matches()) { // Matches es mejor para color=xxx
-            commandMatched = true;
-            System.out.println("  -> MATCH: PON COLOR");
+        } else if ((matcher = PATTERN_GIRA_DERECHA.matcher(trimmedLine)).find()) {
+            turtleState.turnRight(Double.parseDouble(matcher.group(1)));
+            SwingUtilities.invokeLater(() -> canvas.repaint()); // Repintar para ver cambio de ángulo
+        } else if ((matcher = PATTERN_GIRA_IZQUIERDA.matcher(trimmedLine)).find()) {
+            turtleState.turnLeft(Double.parseDouble(matcher.group(1)));
+            SwingUtilities.invokeLater(() -> canvas.repaint()); // Repintar para ver cambio de ángulo
+        } else if ((matcher = PATTERN_PON_COLOR.matcher(trimmedLine)).matches()) {
             String colorName = matcher.group(1).toLowerCase();
             Color color;
             switch (colorName) {
                 case "rojo": color = Color.RED; break;
                 case "azul": color = Color.BLUE; break;
                 case "negro": color = Color.BLACK; break;
-                default:
-                    System.err.println("Advertencia: Color desconocido '" + colorName + "', usando negro.");
-                    color = Color.BLACK;
+                default: color = Color.BLACK; System.err.println("Color desconocido: " + colorName);
             }
             turtleState.setPenColor(color);
-            System.out.println("     Nuevo Color: " + color);
-        } else if ((matcher = PATTERN_PON_POS.matcher(trimmedLine)).matches()) { // Matches es mejor para POS=(x,y)
-            commandMatched = true;
-            System.out.println("  -> MATCH: PON POS");
+        } else if ((matcher = PATTERN_PON_POS.matcher(trimmedLine)).matches()) {
+            turtleState.setPosition(Double.parseDouble(matcher.group(1)), Double.parseDouble(matcher.group(2)));
+            SwingUtilities.invokeLater(() -> canvas.repaint()); // Repintar para ver cambio de posición
+        } else if ((matcher = PATTERN_PON_X.matcher(trimmedLine)).matches()) {
             double x = Double.parseDouble(matcher.group(1));
-            double y = Double.parseDouble(matcher.group(2));
-            turtleState.setPosition(x, y); // Sin dibujar
-            System.out.println("     Nueva Pos: (" + String.format("%.1f", turtleState.getX()) + "," + String.format("%.1f", turtleState.getY()) + ")");
-        } else if ((matcher = PATTERN_PON_X.matcher(trimmedLine)).matches()) { // Matches es mejor para X=100
-             commandMatched = true;
-            System.out.println("  -> MATCH: PON X");
-            double x = Double.parseDouble(matcher.group(1));
-            double startX = turtleState.getX();
-            double startY = turtleState.getY();
+            double startX = turtleState.getX(), startY = turtleState.getY();
             turtleState.setX(x);
-             System.out.println("     Nueva Pos: (" + String.format("%.1f", turtleState.getX()) + "," + String.format("%.1f", turtleState.getY()) + ")");
             if (turtleState.isPenDown()) {
-                final double endX = turtleState.getX();
-                final Color color = turtleState.getPenColor();
-                 System.out.println("     DIBUJANDO línea PX de ("+String.format("%.1f",startX)+","+String.format("%.1f",startY)+") a ("+String.format("%.1f",endX)+","+String.format("%.1f",startY)+") Color: "+color);
-                SwingUtilities.invokeLater(() -> canvas.addLine(startX, startY, endX, startY, color));
+                final double endX = turtleState.getX(); final Color color = turtleState.getPenColor();
+                SwingUtilities.invokeLater(() -> {
+                    canvas.addLine(startX, startY, endX, startY, color);
+                    canvas.repaint(); // <<<--- REPAINT AQUÍ
+                });
+            } else { // Si el lápiz está arriba, solo repintar para ver la nueva posición
+                 SwingUtilities.invokeLater(() -> canvas.repaint());
             }
-        } else if ((matcher = PATTERN_PON_Y.matcher(trimmedLine)).matches()) { // Matches es mejor para Y=100
-             commandMatched = true;
-            System.out.println("  -> MATCH: PON Y");
+        } else if ((matcher = PATTERN_PON_Y.matcher(trimmedLine)).matches()) {
             double y = Double.parseDouble(matcher.group(1));
-            double startX = turtleState.getX();
-            double startY = turtleState.getY();
+            double startX = turtleState.getX(), startY = turtleState.getY();
             turtleState.setY(y);
-             System.out.println("     Nueva Pos: (" + String.format("%.1f", turtleState.getX()) + "," + String.format("%.1f", turtleState.getY()) + ")");
             if (turtleState.isPenDown()) {
-                final double endY = turtleState.getY();
-                final Color color = turtleState.getPenColor();
-                 System.out.println("     DIBUJANDO línea PY de ("+String.format("%.1f",startX)+","+String.format("%.1f",startY)+") a ("+String.format("%.1f",startX)+","+String.format("%.1f",endY)+") Color: "+color);
-                SwingUtilities.invokeLater(() -> canvas.addLine(startX, startY, startX, endY, color));
+                final double endY = turtleState.getY(); final Color color = turtleState.getPenColor();
+                SwingUtilities.invokeLater(() -> {
+                    canvas.addLine(startX, startY, startX, endY, color);
+                    canvas.repaint(); // <<<--- REPAINT AQUÍ
+                });
+            } else { // Si el lápiz está arriba, solo repintar para ver la nueva posición
+                 SwingUtilities.invokeLater(() -> canvas.repaint());
             }
-        } else if ((matcher = PATTERN_PON_RUMBO.matcher(trimmedLine)).matches()) { // Matches está bien aquí
-            commandMatched = true;
-            System.out.println("  -> MATCH: PON RUMBO");
-            double angle = Double.parseDouble(matcher.group(1));
-            turtleState.setAngle(angle);
-            System.out.println("     Nuevo Ángulo: " + String.format("%.1f", turtleState.getAngle()));
-        } else if ((matcher = PATTERN_ESPERA.matcher(trimmedLine)).matches()) { // Matches está bien aquí
-            commandMatched = true;
-            System.out.println("  -> MATCH: ESPERA (ignorado)");
+        } else if ((matcher = PATTERN_PON_RUMBO.matcher(trimmedLine)).matches()) {
+            turtleState.setAngle(Double.parseDouble(matcher.group(1)));
+             SwingUtilities.invokeLater(() -> canvas.repaint()); // Repintar para ver cambio de ángulo
+        } else if ((matcher = PATTERN_ESPERA.matcher(trimmedLine)).matches()) {
+            // Ignorado en la simulación
         } else if (trimmedLine.equalsIgnoreCase(CMD_BAJA_LAPIZ)) {
-            commandMatched = true;
-            System.out.println("  -> MATCH: BAJA LAPIZ");
             turtleState.setPenDown(true);
         } else if (trimmedLine.equalsIgnoreCase(CMD_SUBE_LAPIZ)) {
-            commandMatched = true;
-            System.out.println("  -> MATCH: SUBE LAPIZ");
             turtleState.setPenDown(false);
         } else if (trimmedLine.equalsIgnoreCase(CMD_CENTRO)) {
-            commandMatched = true;
-            System.out.println("  -> MATCH: CENTRO");
             turtleState.setPosition(0.0, 0.0);
-            System.out.println("     Nueva Pos: (0.0,0.0)");
+             SwingUtilities.invokeLater(() -> canvas.repaint()); // Repintar para ver cambio de posición
         } else if (trimmedLine.equalsIgnoreCase(CMD_OCULTA)) {
-            commandMatched = true;
-            System.out.println("  -> MATCH: OCULTA");
             turtleState.setVisible(false);
-            double logicalWidth = 400; double logicalHeight = 400; // Placeholders
-            turtleState.goToOriginTopLeft(logicalWidth, logicalHeight);
-             System.out.println("     Nueva Pos: (" + String.format("%.1f", turtleState.getX()) + "," + String.format("%.1f", turtleState.getY()) + ") | Visible: false");
-        }
-
-        // --- Mensaje si no se reconoce ---
-        if (!commandMatched) {
-            System.out.println("  -> NO MATCH: Línea ignorada.");
+            turtleState.goToOriginTopLeft(400, 400); // Usando valores placeholder
+             SwingUtilities.invokeLater(() -> canvas.repaint()); // Repintar para ocultar y mover
         }
     }
 
-
-    // Clase CanvasPanel (sin cambios respecto a la versión anterior con 'class LineSegment')
+    // Clase CanvasPanel (sin cambios)
     static class CanvasPanel extends JPanel {
-        private static class LineSegment { /* ... (código sin cambios) ... */
-             final double x1, y1, x2, y2;
-            final Color color;
+        private static class LineSegment {
+             final double x1, y1, x2, y2; final Color color;
              LineSegment(double x1, double y1, double x2, double y2, Color color) {
                 this.x1 = x1; this.y1 = y1; this.x2 = x2; this.y2 = y2; this.color = color;
             }
@@ -470,15 +375,14 @@ public class MiniIDE extends JFrame {
         private final List<LineSegment> segments = new ArrayList<>();
         private TurtleState turtleState;
 
-        CanvasPanel(TurtleState initialState) { /* ... (código sin cambios) ... */
+        CanvasPanel(TurtleState initialState) {
             this.turtleState = Objects.requireNonNull(initialState, "TurtleState no puede ser null");
-            setBackground(Color.WHITE);
-            setPreferredSize(new Dimension(400, 400));
+            setBackground(Color.WHITE); setPreferredSize(new Dimension(400, 400));
         }
-        public void addLine(double x1, double y1, double x2, double y2, Color color) { /* ... */ segments.add(new LineSegment(x1, y1, x2, y2, color));}
-        public void clearDrawing() { /* ... */ segments.clear(); repaint();}
+        public void addLine(double x1, double y1, double x2, double y2, Color color) { segments.add(new LineSegment(x1, y1, x2, y2, color));}
+        public void clearDrawing() { segments.clear(); repaint();}
         @Override
-        protected void paintComponent(Graphics g) { /* ... (código sin cambios) ... */
+        protected void paintComponent(Graphics g) {
              super.paintComponent(g);
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -499,9 +403,9 @@ public class MiniIDE extends JFrame {
             if (turtleState != null && turtleState.isVisible()) { drawTurtle(g2); }
             g2.dispose();
         }
-        private int logicalToSwingX(double logicalX) { /* ... */ return (int) Math.round(logicalX + getWidth() / 2.0);}
-        private int logicalToSwingY(double logicalY) { /* ... */ return (int) Math.round(-logicalY + getHeight() / 2.0);}
-        private void drawTurtle(Graphics2D g2) { /* ... (código sin cambios) ... */
+        private int logicalToSwingX(double logicalX) { return (int) Math.round(logicalX + getWidth() / 2.0);}
+        private int logicalToSwingY(double logicalY) { return (int) Math.round(-logicalY + getHeight() / 2.0);}
+        private void drawTurtle(Graphics2D g2) {
              double size = 10.0;
             int turtleXSwing = logicalToSwingX(turtleState.getX()); int turtleYSwing = logicalToSwingY(turtleState.getY());
             double angleRad = Math.toRadians(turtleState.getAngle());
@@ -513,7 +417,7 @@ public class MiniIDE extends JFrame {
             g2.setColor(Color.BLUE); g2.fill(triangle);
             g2.setColor(Color.DARK_GRAY); g2.draw(triangle);
         }
-        public void setTurtleState(TurtleState state) { /* ... */ this.turtleState = Objects.requireNonNull(state);}
+        public void setTurtleState(TurtleState state) { this.turtleState = Objects.requireNonNull(state);}
     } // Fin CanvasPanel
 
     // main (sin cambios)
