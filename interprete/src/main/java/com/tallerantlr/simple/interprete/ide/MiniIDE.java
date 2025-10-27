@@ -64,8 +64,63 @@ public class MiniIDE extends JFrame {
         super("Logo-lite IDE");
         // Editor
         editor.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-        editor.setText("// Prueba Completa de Comandos de Dibujo\nhaz lado 80 // Variable requerida\n\n// --- 1. Dibuja un cuadrado ROJO con movimiento relativo ---\n// Testa: poncl, bajalapiz, av, gd\nponcl \"rojo\"\nbajalapiz\nav lado\ngd 90\nav lado\ngd 90\nav lado\ngd 90\nav lado\ngd 90 // Termina en la posición inicial, mirando igual\n\n// --- 2. Moverse sin dibujar ---\n// Testa: subelapiz, gi, re\nsubelapiz\ngi 90    // Gira a la izquierda\nre 100    // Retrocede 100 (sin dibujar)\n\n// --- 3. Dibuja una línea AZUL ---\n// Testa: poncl, bajalapiz, av\nponcl \"azul\"\nbajalapiz\nav 50\n\n// --- 4. Moverse a una esquina con posicionamiento absoluto ---\n// Testa: subelapiz, ponpos\nsubelapiz\nponpos [50 50] // Moverse a la coordenada (50, 50) sin dibujar\n\n// --- 5. Dibujar una \"L\" NEGRA usando ponX y ponY ---\n// Testa: poncl, bajalapiz, ponx, pony\nponcl \"negro\"\nbajalapiz\nponx 100  // Dibuja línea horizontal de (50, 50) a (100, 50)\npony 100  // Dibuja línea vertical de (100, 50) a (100, 100)\n\n// --- 6. Volver al centro y pausar ---\n// Testa: centro, espera\nsubelapiz\ncentro    // Mover la tortuga al centro\nespera 60 // Pausa por 1 segundo (60/60)\n\n// --- 7. Dibujar una línea apuntando hacia arriba ---\n// Testa: ponrumbo, bajalapiz, av\nponrumbo 90 // Apuntar hacia arriba (asumiendo 90=arriba)\nbajalapiz\nav 120\n\n// --- 8. Mover a la posición inicial ---\n// Testa: ot\not // Mover a la esquina superior izquierda\n"); // Ejemplo inicial
-
+        editor.setText(
+                "// Prueba Completa de Comandos de Dibujo\n" +
+                "haz lado 80 // Variable requerida\n\n" +
+                "// --- 1. Dibuja un cuadrado ROJO con movimiento relativo ---\n" +
+                "// Testa: poncl, bajalapiz, av, gd\n" +
+                "poncl \"rojo\"\n" +
+                "bajalapiz\n" +
+                "av lado\n" +
+                "gd 90\n" +
+                "av lado\n" +
+                "gd 90\n" +
+                "av lado\n" +
+                "gd 90\n" +
+                "av lado\n" +
+                "gd 90 // Termina en la posición inicial, mirando igual\n\n" +
+                "// --- 2. Moverse sin dibujar ---\n" +
+                "// Testa: subelapiz, gi, re\n" +
+                "subelapiz\n" +
+                "gi 90    // Gira a la izquierda\n" + // Cuidado con espacio extra aquí si causa problemas
+                "re 100    // Retrocede 100 (sin dibujar)\n\n" + // Cuidado con espacio extra aquí
+                "// --- 3. Dibuja una línea AZUL ---\n" +
+                "// Testa: poncl, bajalapiz, av\n" +
+                "poncl \"azul\"\n" +
+                "// Espiral de cuadrados de colores (sin %)\n\n" +
+                "haz lado 180\n" +
+                "haz paso 8\n" +
+                "haz giro 12\n" +
+                "haz veces 28\n" +
+                "haz i 0\n" +
+                "para cuadrado [l]\n" + // 'para' en minúscula
+                "  bajalapiz\n" +
+                "  REPITE 4 [\n" +      // 'REPITE' en mayúscula
+                "    av l\n" +          // 'av' en minúscula
+                "    gd 90\n" +         // 'gd' en minúscula
+                "  ]\n" +
+                "  subelapiz\n" +
+                "fin\n\n" +             // 'fin' en minúscula
+                "para colorDe [k]\n\n" + // 'para' en minúscula
+                "  SI (k == 0) [ poncl \"rojo\" ] [\n" + // 'SI' y 'poncl' mixtos
+                "    SI (k == 1) [ poncl \"azul\" ] [\n" +
+                "      SI (k == 2) [ poncl \"negro\" ] [\n" +
+                "      ]\n" +
+                "    ]\n" +
+                "  ]\n" +
+                "fin\n\n" +             // 'fin' en minúscula
+                "centro\n" +            // 'centro' en minúscula
+                "ponrumbo 0\n\n" +      // 'ponrumbo' en minúscula
+                "REPITE veces [\n" +     // 'REPITE' en mayúscula
+                "  colorDe(azar 3)\n" + // 'azar' en minúscula
+                "  cuadrado(lado)\n" +
+                "  gi azar(360)\n" +    // 'gi', 'azar' en minúscula
+                "  inic lado = Diferencia lado paso\n" + // 'inic', 'Diferencia' mixtos
+                "  INC [i]\n" +         // 'INC' en mayúscula
+                "]\n\n" +
+                "ot\n"                  // 'ot' en minúscula
+            );        JButton verifyBtn = new JButton("Verificar Código");
+        verifyBtn.addActionListener(e -> verifyCode()); // Llama al nuevo método
         // Consola
         console.setEditable(false);
         console.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
@@ -91,6 +146,7 @@ public class MiniIDE extends JFrame {
         main.setResizeWeight(0.35);
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topBar.add(runBtn);
+        topBar.add(verifyBtn);     // <<<--- AÑADIR BOTÓN AQUÍ
         topBar.add(treeBtn);
         topBar.add(irBtn);
         topBar.add(exeBtn);
@@ -157,6 +213,51 @@ public class MiniIDE extends JFrame {
             console.append("[IR ERR] " + t.getMessage() + "\n");
             t.printStackTrace();
         }
+    }
+ // ========== NUEVO MÉTODO PARA VERIFICAR CÓDIGO ==========
+    private void verifyCode() {
+        console.setText(""); // Limpiar consola
+        clearEditorHighlights(); // Limpiar resaltados previos
+        updateParseTree(); // Opcional: mostrar árbol actualizado (puede mostrar errores sintácticos)
+
+        // Redirigir System.out/err (igual que en runProgram)
+        PrintStream originalOut = System.out, originalErr = System.err;
+        PrintStream outPs = new PrintStream(new ConsoleOutputStream(console, false));
+        PrintStream errPs = new PrintStream(new ConsoleOutputStream(console, true));
+        System.setOut(outPs);
+        System.setErr(errPs);
+
+        // Usar SwingWorker para no congelar la UI
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                try {
+                    // Llamar a un NUEVO método en InterpreterRunner que solo verifica
+                    InterpreterRunner.verifyCodeOnly(
+                        editor.getText(),
+                        s -> console.append(s + "\n"), // err consumer
+                        uiHighlighterHandler()         // handler para resaltar
+                    );
+                    // Si llega aquí sin excepción, la verificación fue exitosa
+                    console.append("[INFO] Verificación completada: Sin errores encontrados.\n");
+
+                } catch (Throwable t) {
+                    // El error ya debería haberse mostrado/resaltado por los listeners/handler
+                    // Podemos imprimir un mensaje adicional si queremos
+                    console.append("[VERIFY ERR] " + t.getMessage() + "\n");
+                    // t.printStackTrace(); // Opcional: imprimir stack trace en consola del sistema
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                // Restaurar System.out/err
+                System.setOut(originalOut);
+                System.setErr(originalErr);
+                // No necesitamos repaint aquí porque no dibujamos
+            }
+        }.execute();
     }
     private void generateExe() {
         console.setText("");
