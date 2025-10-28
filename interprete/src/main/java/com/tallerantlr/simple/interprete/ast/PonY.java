@@ -1,32 +1,41 @@
 package com.tallerantlr.simple.interprete.ast;
 
+import com.tallerantlr.simple.interprete.TurtleState;
+import com.tallerantlr.simple.interprete.ide.InterpreterRunner; // Importar
 import java.util.Map;
+import java.awt.Color; // Importar
 
 public class PonY implements ASTNode {
     private final ASTNode yExpr;
-
-    // Opcional: clave de estado para futuras integraciones
-    private static final String KEY_Y = "__y__";
 
     public PonY(ASTNode yExpr) {
         this.yExpr = yExpr;
     }
 
     @Override
-    public Object execute(Map<String, Object> symbolTable) {
-        Object yv = yExpr.execute(symbolTable);
+    public Object execute(Map<String, Object> context) {
+        TurtleState turtleState = (TurtleState) context.get(InterpreterRunner.TURTLE_STATE_KEY); // Usar clave de Runner
+        InterpreterRunner.DrawingDelegate delegate = (InterpreterRunner.DrawingDelegate) context.get(InterpreterRunner.DRAWING_DELEGATE_KEY); // Usar clave de Runner
+
+        if (turtleState == null || delegate == null) {
+            throw new IllegalStateException("TurtleState o DrawingDelegate no encontrados en el contexto");
+        }
+
+        Object yv = yExpr.execute(context);
         if (!(yv instanceof Number)) {
             String t = (yv == null) ? "null" : yv.getClass().getSimpleName();
-            throw new RuntimeException("Error semántico: 'pony' requiere Y numérico (actual: " + t + ")");
+            throw new SemanticError("Error: 'pony' requiere Y numérico (actual: " + t + ")", 0, 0);
         }
-        int y = ((Number) yv).intValue();
+        double y = ((Number) yv).doubleValue();
 
-        // Stub: solo imprimir
-        System.out.println("la tortuga puso Y = " + y + " (sin dibujar)");
+        double startX = turtleState.getX(); // X no cambia
+        double startY = turtleState.getY();
 
-        // (Opcional) Guardar estado para que otras instrucciones lo lean
-        // symbolTable.put(KEY_Y, y);
+        turtleState.setY(y); // Actualizar solo Y en el estado
 
+        if (turtleState.isPenDown()) {
+            delegate.addLine(startX, startY, startX, turtleState.getY(), turtleState.getPenColor());
+        }
         return null;
     }
 }

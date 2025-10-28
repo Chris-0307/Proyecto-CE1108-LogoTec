@@ -16,16 +16,23 @@ grammar Simple;
 }
 
 @parser::members {
-    Map<String, Object> globals = new HashMap<>();
+    public Map<String, Object> globals = new HashMap<>();
     Map<String, ProcedureDef> procTable = new HashMap<>();
 
-    // int varDeclCount = 0;      // ← REMOVE
-    int hazCount = 0;             // ← NEW
+    
+    int hazCount = 0;             
 
     static String sig(String name, int arity) { return name + "#" + arity; }
-
+	public int getHazCount() { return hazCount; }
     public boolean executeOnParse = true;
     public boolean enforceVarDecl = true;   // mantenemos el nombre por compatibilidad
+    
+     public Map<String, ProcedureDef> getProcTable() {
+        return procTable;
+    }
+    
+    public java.util.Set<String> getGlobalNames() { return globals.keySet(); }
+    
 }
 
 
@@ -249,20 +256,21 @@ returns [ASTNode node]
 
 hazStmt
 returns [ASTNode node]
-    :   // HAZ con inicialización en la misma línea
+    :   // HAZ con inicialización
         HAZ id=ID v=expression (SEP)?
         {
             hazCount++;
+            globals.put($id.text, null);   // <<< AÑADIR
             $node = new HazAssign($id.text, $v.node);
         }
-    |   // HAZ solo declara (sin valor)
+    |   // HAZ solo declara
         HAZ id=ID (SEP)?
         {
             hazCount++;
+            globals.put($id.text, null);   // <<< AÑADIR
             $node = new HazAssign($id.text, null);
         }
     ;
-
 
 // println( expr )
 printlnStmt
@@ -484,28 +492,14 @@ returns [java.util.List<String> ids]
 expression
 returns [ASTNode node]
  :   left=relExpr
-        {
-            $node = $left.node;
-        }
-        ( EQ right=relExpr
-            {
-                $node = new Equal($node, $right.node);
-            }
-        )*
-    |   s=sumaExpr
-        {
-            $node = $s.node;
-        }
-    |   productoExpr                    
-    	{ 
-    		$node = $productoExpr.node; 
-    	}
-
-
-    |   d=divisionExpr
-        {
-            $node = $d.node;
-        }
+        { $node = $left.node; }
+        ( EQ right=relExpr { $node = new Equal($node, $right.node); } )*
+    |   s=sumaExpr         { $node = $s.node; }
+    |   diferenciaExpr { $node = $diferenciaExpr.node; }    
+    |   productoExpr       { $node = $productoExpr.node; }
+    |   d=divisionExpr     { $node = $d.node; }
+    |   potenciaExpr { $node = $potenciaExpr.node; }
+    
     ;
     
    
@@ -551,7 +545,8 @@ returns [ASTNode node]
         | PERM t4=term                  { $node = new Permutation($node, $t4.node); }
         )*
     ;
-    
+
+
     
    
 
@@ -571,18 +566,6 @@ returns [ASTNode node]
             $node = new Constant(content);
           }
           
-    |   'Producto' PAR_OPEN first=expression (COMMA rest+=expression)* PAR_CLOSE
-          {
-            java.util.List<ASTNode> factors = new java.util.ArrayList<>();
-            factors.add($first.node);
-            if ($rest != null) {
-              for (SimpleParser.ExpressionContext r : $rest) factors.add(r.node);
-            }
-            $node = new Producto(factors);
-          }
-
-    |   'Division' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
-          { $node = new Division($e1.node, $e2.node); }
 
     |   ID
           { $node = new VarRef($ID.text, $ID.getLine(), $ID.getCharPositionInLine()); }
@@ -591,25 +574,12 @@ returns [ASTNode node]
     |   PAR_OPEN expression PAR_CLOSE
           { $node = $expression.node; }
 
-    // Funciones/operadores “palabra ( … )”
-    |   'Y' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
+     // --- Y / O con paréntesis separados (nuevo) ---
+    |   'Y' PAR_OPEN e1=expression PAR_CLOSE PAR_OPEN e2=expression PAR_CLOSE
           { $node = new And($e1.node, $e2.node); }
-
-    |   'O' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
+    |   'O' PAR_OPEN e1=expression PAR_CLOSE PAR_OPEN e2=expression PAR_CLOSE
           { $node = new Or($e1.node, $e2.node); }
 
-    |   'Potencia' PAR_OPEN e1=expression COMMA e2=expression PAR_CLOSE
-          { $node = new Potencia($e1.node, $e2.node); }
-
-    |   'Diferencia' PAR_OPEN first=expression (COMMA rest+=expression)* PAR_CLOSE
-          {
-            java.util.List<ASTNode> terms = new java.util.ArrayList<>();
-            terms.add($first.node);
-            if ($rest != null) {
-              for (SimpleParser.ExpressionContext r : $rest) terms.add(r.node);
-            }
-            $node = new Diferencia(terms);
-          }
 
     // Palabras estilo operador infijo simple
     |   MAYORQUEQ a=addExpr b=addExpr           { $node = new GreaterThan($a.node, $b.node); }
@@ -626,6 +596,27 @@ sumaExpr
 returns [ASTNode node]
     :   SUMA exprList                   { $node = new Suma($exprList.list); }
     ;
+    
+    
+// forma: Diferencia a 1 2 ...
+diferenciaExpr
+returns [ASTNode node]
+    :   DIFERENCIA exprList           { $node = new Diferencia($exprList.list); }
+    ;
+    
+    
+    
+potenciaExpr
+returns [ASTNode node]
+@init { java.util.List<ASTNode> nodes = new java.util.ArrayList<>(); }
+    :   POTENCIA e1=addExpr
+        ( e2=addExpr { nodes.add($e2.node); } )*
+      {
+        nodes.add(0, $e1.node);
+        $node = new PotenciaN(nodes);
+      }
+    ;
+
 
 
 // Lista de argumentos para suma (usa addExpr para respetar prioridad de operadores)
@@ -682,11 +673,12 @@ CENTRO: [Cc][Ee][Nn][Tt][Rr][Oo];
 ESPERA: [Ee][Ss][Pp][Ee][Rr][Aa];
 EJECUTA: [Ee][Jj][Ee][Cc][Uu][Tt][Aa];
 REPITE: [Rr][Ee][Pp][Ii][Tt][Ee];
-DIVISION: 'división';   
+DIVISION: [Dd][Ii][Vv][Ii][Ss][Ii][Oo][Nn];   
 DIV: '/'; 
-PRODUCTO : 'producto';
-SUMA: 'suma';
-
+PRODUCTO : [Pp][Rr][Oo][Dd][Uu][Cc][Tt][Oo];
+SUMA: [Ss][Uu][Mm][Aa];
+POTENCIA : [Pp][Oo][Tt][Ee][Nn][Cc][Ii][Aa];
+DIFERENCIA : [Dd][Ii][Ff][Ee][Rr][Ee][Nn][Cc][Ii][Aa];
 
 
 STRING

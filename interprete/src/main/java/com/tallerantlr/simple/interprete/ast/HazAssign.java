@@ -16,7 +16,7 @@ public class HazAssign implements ASTNode {
         // Declaración sin valor inicial: 'Haz x'
         if (valueExpr == null) {
             if (!symbolTable.containsKey(name)) {
-                symbolTable.put(name, null);   // sin tipo aún
+                symbolTable.put(name, null);
             }
             return null;
         }
@@ -25,16 +25,20 @@ public class HazAssign implements ASTNode {
         boolean exists = symbolTable.containsKey(name);
 
         if (!exists) {
-            // Primera vez con valor: declara y fija tipo
             symbolTable.put(name, newVal);
             return null;
         }
 
         Object oldVal = symbolTable.get(name);
 
-        // Reasignación permitida si el tipo coincide (o ambos null)
-        if ((oldVal == null && newVal == null) ||
-            (oldVal != null && newVal != null && oldVal.getClass().equals(newVal.getClass()))) {
+        // ⬅️ CAMBIO CLAVE: si estaba sin inicializar (null), inicializa con el nuevo valor
+        if (oldVal == null) {
+            symbolTable.put(name, newVal);
+            return null;
+        }
+
+        // A partir de aquí, aplica chequeo de tipos para reasignaciones posteriores
+        if (newVal == null || oldVal.getClass().equals(newVal.getClass())) {
             symbolTable.put(name, newVal);
             return null;
         }
