@@ -179,10 +179,9 @@ returns [ASTNode node]
 
 rumboStmt
 returns [ASTNode node]
-    :   RUMBO (SEP)?
+    :   (MUESTRA)? RUMBO (SEP)?
         { $node = new Rumbo(); }
     ;
-
 
 ponRumboStmt
 returns [ASTNode node]
@@ -488,18 +487,18 @@ returns [java.util.List<String> ids]
         RBRACK
     ;
 
-// ======= Expresiones =======
 expression
 returns [ASTNode node]
  :   left=relExpr
         { $node = $left.node; }
-        ( EQ right=relExpr { $node = new Equal($node, $right.node); } )*
+        ( (EQ | ASSIGN) right=relExpr   // ← acepta '==' o '='
+          { $node = new Equal($node, $right.node); }
+        )*
     |   s=sumaExpr         { $node = $s.node; }
-    |   diferenciaExpr { $node = $diferenciaExpr.node; }    
+    |   diferenciaExpr     { $node = $diferenciaExpr.node; }    
     |   productoExpr       { $node = $productoExpr.node; }
     |   d=divisionExpr     { $node = $d.node; }
-    |   potenciaExpr { $node = $potenciaExpr.node; }
-    
+    |   potenciaExpr       { $node = $potenciaExpr.node; }
     ;
     
    
@@ -639,12 +638,11 @@ returns [List<ASTNode> list]
 SEP : SEMICOLON ;
 EOL : NEWLINE ;
 
-PARA: 'para';
-FIN:  'fin';
-VAR:  'var';
+PARA: [Pp][Aa][Rr][Aa];
+FIN:  [Ff][Ii][Nn];
 PRINTLN: 'println';
-HAZ: [Hh] 'az';  
-INIC: 'inic';
+HAZ: [Hh][Aa][Zz];  
+INIC: [Ii][Nn][Ii][Cc];
 INC: [Ii][Nn][Cc];
 AZAR: [Aa][Zz][Aa][Rr];
 AVANZA: [Aa][Vv][Aa][Nn][Zz][Aa];
@@ -682,7 +680,8 @@ DIFERENCIA : [Dd][Ii][Ff][Ee][Rr][Ee][Nn][Cc][Ii][Aa];
 
 
 STRING
-  : '"' ( '\\"' | ~["\r\n] )* '"'   // cadena con \" escapado
+  : '"' ( '\\"' | ~["\r\n] )* '"'                 // "hola"
+  | '“' ( '\\"' | ~[”\r\n] )* '”'                // “hola”
   ;
 
 PLUS: '+';
@@ -690,6 +689,7 @@ MINUS: '-';
 MULT: '*';
 AT: '@';
 
+MUESTRA: [Mm][Uu][Ee][Ss][Tt][Rr][Aa];
 
 SI : 'SI' ;
 

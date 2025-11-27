@@ -2,6 +2,7 @@ package com.tallerantlr.simple.interprete.ide;
 
 // Imports existentes
 import com.tallerantlr.simple.interprete.SimpleLexer;
+
 import com.tallerantlr.simple.interprete.SimpleParser;
 import com.tallerantlr.simple.interprete.TurtleState;
 
@@ -28,6 +29,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher; // Para parsing con expresiones regulares
 import java.util.regex.Pattern; // Para parsing con expresiones regulares
+
+
+import com.tallerantlr.simple.interprete.ast.SemanticError;
 
 
 public class MiniIDE extends JFrame {
@@ -135,7 +139,7 @@ public class MiniIDE extends JFrame {
         System.setErr(errPs);
         
         try {
-            car = new CarController("COM3", 9600);  // <-- CAMBIA "COM7"
+            car = new CarController("COM1", 9600);  // <-- CAMBIA "COM7"
             console.append("[CAR] Conectado a COM3\n");
         } catch (Exception e) {
             console.append("[CAR ERR] No se pudo conectar al carrito: " + e.getMessage() + "\n");
@@ -230,6 +234,7 @@ public class MiniIDE extends JFrame {
             t.printStackTrace();
         }
     }
+    
  // ========== NUEVO MÉTODO PARA VERIFICAR CÓDIGO ==========
     private void verifyCode() {
         console.setText(""); // Limpiar consola
@@ -252,16 +257,25 @@ public class MiniIDE extends JFrame {
                     InterpreterRunner.verifyCodeOnly(
                         editor.getText(),
                         s -> console.append(s + "\n"), // err consumer
-                        uiHighlighterHandler()         // handler para resaltar
+                        uiHighlighterHandler()         // handler para resaltar (léxico/sintaxis/semántico si se usa)
                     );
                     // Si llega aquí sin excepción, la verificación fue exitosa
                     console.append("[INFO] Verificación completada: Sin errores encontrados.\n");
 
                 } catch (Throwable t) {
-                    // El error ya debería haberse mostrado/resaltado por los listeners/handler
-                    // Podemos imprimir un mensaje adicional si queremos
+                    // El error ya debería haberse mostrado/resaltado por los listeners/handler,
+                    // pero por si acaso, lo mostramos aquí y, si es semántico, lo resaltamos.
                     console.append("[VERIFY ERR] " + t.getMessage() + "\n");
-                    // t.printStackTrace(); // Opcional: imprimir stack trace en consola del sistema
+
+                    if (t instanceof SemanticError) {
+                        SemanticError se = (SemanticError) t;
+                        SwingUtilities.invokeLater(() ->
+                            highlightError(se.getLine(), se.getCharPos())
+                        );
+                    }
+
+                    // Opcional: stacktrace en consola del sistema
+                    // t.printStackTrace();
                 }
                 return null;
             }
@@ -271,10 +285,11 @@ public class MiniIDE extends JFrame {
                 // Restaurar System.out/err
                 System.setOut(originalOut);
                 System.setErr(originalErr);
-                // No necesitamos repaint aquí porque no dibujamos
             }
         }.execute();
     }
+
+
     private void generateExe() {
         console.setText("");
         try {
