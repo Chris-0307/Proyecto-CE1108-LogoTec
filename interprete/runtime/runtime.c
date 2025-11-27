@@ -50,6 +50,9 @@ void turtle_oculta(void) {
 }
 // --- FIN FUNCIÓN MODIFICADA ---
 
+void turtle_rumbo(void) {
+}
+
 void turtle_ponRumbo(int deg) {
     printf("pon rumbo = %d grados\n", deg);
 }
