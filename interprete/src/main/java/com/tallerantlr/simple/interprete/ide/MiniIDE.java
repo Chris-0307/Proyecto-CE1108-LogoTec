@@ -36,6 +36,7 @@ public class MiniIDE extends JFrame {
     private final TurtleState initialTurtleState = new TurtleState();
     private final CanvasPanel canvas = new CanvasPanel(initialTurtleState);
     private final ParseTreePanel parsePanel = new ParseTreePanel();
+    private CarController car;
 
     private final Highlighter.HighlightPainter LINE_PAINTER =
         new DefaultHighlighter.DefaultHighlightPainter(new Color(255, 235, 59, 160));
@@ -126,6 +127,21 @@ public class MiniIDE extends JFrame {
         console.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
         console.setBackground(new Color(250, 250, 250));
         console.setBorder(new EmptyBorder(6, 6, 6, 6));
+        
+        
+        PrintStream outPs = new PrintStream(new ConsoleOutputStream(console, false), true);
+        PrintStream errPs = new PrintStream(new ConsoleOutputStream(console, true), true);
+        System.setOut(outPs);
+        System.setErr(errPs);
+        
+        try {
+            car = new CarController("COM3", 9600);  // <-- CAMBIA "COM7"
+            console.append("[CAR] Conectado a COM3\n");
+        } catch (Exception e) {
+            console.append("[CAR ERR] No se pudo conectar al carrito: " + e.getMessage() + "\n");
+            car = null; // sin carrito, solo dibuja
+        }
+
 
         // Botones
         JButton runBtn = new JButton("Ejecutar");
@@ -382,32 +398,62 @@ public class MiniIDE extends JFrame {
 
         if ((matcher = PATTERN_AVANZA.matcher(trimmedLine)).find()) {
             double amount = Double.parseDouble(matcher.group(1));
+
+            // === SIMULACIÓN EN PANTALLA (igual que antes) ===
             double startX = turtleState.getX(), startY = turtleState.getY();
             turtleState.moveForward(amount);
             if (turtleState.isPenDown()) {
-                final double endX = turtleState.getX(), endY = turtleState.getY(); final Color color = turtleState.getPenColor();
+                final double endX = turtleState.getX(), endY = turtleState.getY();
+                final Color color = turtleState.getPenColor();
                 SwingUtilities.invokeLater(() -> {
                     canvas.addLine(startX, startY, endX, endY, color);
-                    canvas.repaint(); // <<<--- REPAINT AQUÍ
+                    canvas.repaint();
                 });
             }
+
+            // === NUEVO: ENVIAR AL CARRITO ===
+            if (car != null && car.isConnected()) {
+                car.avanzarUnidades(amount);
+            }
+
         } else if ((matcher = PATTERN_RETROCEDE.matcher(trimmedLine)).find()) {
             double amount = Double.parseDouble(matcher.group(1));
+
             double startX = turtleState.getX(), startY = turtleState.getY();
             turtleState.moveForward(-amount);
             if (turtleState.isPenDown()) {
-                final double endX = turtleState.getX(), endY = turtleState.getY(); final Color color = turtleState.getPenColor();
+                final double endX = turtleState.getX(), endY = turtleState.getY();
+                final Color color = turtleState.getPenColor();
                 SwingUtilities.invokeLater(() -> {
                     canvas.addLine(startX, startY, endX, endY, color);
-                    canvas.repaint(); // <<<--- REPAINT AQUÍ
+                    canvas.repaint();
                 });
             }
+
+            if (car != null && car.isConnected()) {
+                car.retrocederUnidades(amount);
+            }
+
         } else if ((matcher = PATTERN_GIRA_DERECHA.matcher(trimmedLine)).find()) {
-            turtleState.turnRight(Double.parseDouble(matcher.group(1)));
-            SwingUtilities.invokeLater(() -> canvas.repaint()); // Repintar para ver cambio de ángulo
+            double grados = Double.parseDouble(matcher.group(1));
+
+            turtleState.turnRight(grados);
+            SwingUtilities.invokeLater(() -> canvas.repaint());
+
+            if (car != null && car.isConnected()) {
+                car.girarDerechaGrados(grados);
+            }
+
         } else if ((matcher = PATTERN_GIRA_IZQUIERDA.matcher(trimmedLine)).find()) {
+            double grados = Double.parseDouble(matcher.group(1));
+
             turtleState.turnLeft(Double.parseDouble(matcher.group(1)));
-            SwingUtilities.invokeLater(() -> canvas.repaint()); // Repintar para ver cambio de ángulo
+            SwingUtilities.invokeLater(() -> canvas.repaint());
+
+            if (car != null && car.isConnected()) {
+                car.girarIzquierdaGrados(grados);
+            }
+
         } else if ((matcher = PATTERN_PON_COLOR.matcher(trimmedLine)).matches()) {
             String colorName = matcher.group(1).toLowerCase();
             Color color;
