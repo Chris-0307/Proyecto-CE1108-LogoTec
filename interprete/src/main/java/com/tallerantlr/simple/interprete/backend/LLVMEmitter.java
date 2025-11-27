@@ -68,6 +68,7 @@ public class LLVMEmitter {
         sb.append("declare void @turtle_ponColorLapiz(i32)\n");
         sb.append("declare void @turtle_espera(i32)\n");
         sb.append("declare void @turtle_oculta()\n");
+        sb.append("declare void @turtle_rumbo()\n");
         sb.append("declare void @turtle_ponRumbo(i32)\n");
         sb.append("declare void @turtle_retrocede(i32)\n");
         sb.append("declare i32 @runtime_azar(i32)\n\n");
@@ -376,28 +377,54 @@ public class LLVMEmitter {
     }
 
     private void emitPow(String dst, IRValue a, IRValue b) {
-        // pow entero simple: a^b con bucle (i32)
+        // a^b con exponente entero no negativo
         String base = asValue(a, VType.INT);
         String exp  = asValue(b, VType.INT);
         tempType.put(dst.substring(1), VType.INT);
 
-        String res = fresh(), i = fresh(), Lc = freshLabel("pow_c"), Lb = freshLabel("pow_b"), Le = freshLabel("pow_e"), cmp = fresh();
-        sb.append("  ").append(res).append(" = add i32 1, 0\n");
-        sb.append("  ").append(i).append(" = add i32 0, 0\n");
-        sb.append(Lc.substring(1)).append(":\n");
-        sb.append("  ").append(cmp).append(" = icmp slt i32 ").append(i).append(", ").append(exp).append("\n");
-        sb.append("  br i1 ").append(cmp).append(", label ").append(Lb).append(", label ").append(Le).append("\n");
-        sb.append(Lb.substring(1)).append(":\n");
-        String tmp = fresh();
-        sb.append("  ").append(tmp).append(" = mul i32 ").append(res).append(", ").append(base).append("\n");
-        sb.append("  ").append(res).append(" = add i32 ").append(tmp).append(", 0\n");
-        String i2 = fresh();
-        sb.append("  ").append(i2).append(" = add i32 ").append(i).append(", 1\n");
-        sb.append("  ").append(i).append(" = add i32 ").append(i2).append(", 0\n");
+        // variables "locales" para el bucle (acumulador y contador)
+        String resPtr = fresh();  // ptr i32
+        String iPtr   = fresh();  // ptr i32
+        sb.append("  ").append(resPtr).append(" = alloca i32\n");
+        sb.append("  store i32 1, ptr ").append(resPtr).append("\n");   // res = 1
+        sb.append("  ").append(iPtr).append(" = alloca i32\n");
+        sb.append("  store i32 0, ptr ").append(iPtr).append("\n");     // i = 0
+
+        // etiquetas
+        String Lc = freshLabel("pow_c"); // condición
+        String Lb = freshLabel("pow_b"); // cuerpo
+        String Le = freshLabel("pow_e"); // salida
+
+        // cerrar el bloque actual y saltar al de condición
         sb.append("  br label ").append(Lc).append("\n");
+
+        // --- bloque condición ---
+        sb.append(Lc.substring(1)).append(":\n");
+        String iVal = fresh();
+        sb.append("  ").append(iVal).append(" = load i32, ptr ").append(iPtr).append("\n");
+        String cmp = fresh();
+        sb.append("  ").append(cmp).append(" = icmp slt i32 ").append(iVal).append(", ").append(exp).append("\n");
+        sb.append("  br i1 ").append(cmp).append(", label ").append(Lb).append(", label ").append(Le).append("\n");
+
+        // --- bloque cuerpo ---
+        sb.append(Lb.substring(1)).append(":\n");
+        String resVal = fresh();
+        sb.append("  ").append(resVal).append(" = load i32, ptr ").append(resPtr).append("\n");
+        String mul = fresh();
+        sb.append("  ").append(mul).append(" = mul i32 ").append(resVal).append(", ").append(base).append("\n");
+        sb.append("  store i32 ").append(mul).append(", ptr ").append(resPtr).append("\n");
+        String iInc = fresh();
+        sb.append("  ").append(iInc).append(" = add i32 ").append(iVal).append(", 1\n");
+        sb.append("  store i32 ").append(iInc).append(", ptr ").append(iPtr).append("\n");
+        sb.append("  br label ").append(Lc).append("\n");
+
+        // --- bloque salida ---
         sb.append(Le.substring(1)).append(":\n");
-        sb.append("  ").append(dst).append(" = add i32 ").append(res).append(", 0\n");
+        String out = fresh();
+        sb.append("  ").append(out).append(" = load i32, ptr ").append(resPtr).append("\n");
+        sb.append("  ").append(dst).append(" = add i32 ").append(out).append(", 0\n");
     }
+
 
     private String ptrOf(IRVar v) {
         String name = v.name;
