@@ -4,6 +4,12 @@
 #include <time.h>
 #include <string.h> // Necesario para strcmp
 
+
+static int turtle_heading = 0;
+// Estado para el color (0..9)
+static int turtle_color = 0;
+
+
 // ----- println -----
 void println_i32(int x) {
     printf("%d\n", x);
@@ -30,12 +36,24 @@ void turtle_ponPos(int x,int y)  { printf("tortuga POS=(%d,%d)\n", x,y); }
 void turtle_bajaLapiz(void)      { printf("baja lapiz\n"); }
 void turtle_subeLapiz(void)      { printf("sube lapiz\n"); }
 
-void turtle_ponColorLapiz(const char* colorName) {
-    if (colorName != NULL) {
-        printf("color=%s\n", colorName);
-    } else {
-        printf("color=null\n");
+
+// Índices usados en la gramática:
+// 0=negro, 1=azul, 2=rojo, 3=verde, 4=amarillo,
+// 5=blanco, 6=naranja, 7=morado, 8=celeste, 9=magenta
+void turtle_ponColorLapiz(int colorCode) {
+    static const char* names[] = {
+        "negro","azul","rojo","verde","amarillo",
+        "blanco","naranja","morado","celeste","magenta"
+    };
+
+    turtle_color = colorCode;
+
+    const char* name = "desconocido";
+    if (colorCode >= 0 && colorCode < 10) {
+        name = names[colorCode];
     }
+
+    printf("color=%s (%d)\n", name, colorCode);
 }
 
 void turtle_espera(int ms)       { printf("espera %d ms\n", ms); }
@@ -50,11 +68,13 @@ void turtle_oculta(void) {
 }
 // --- FIN FUNCIÓN MODIFICADA ---
 
-void turtle_rumbo(void) {
+void turtle_ponRumbo(int deg) {
+    turtle_heading = deg;  // guarda el rumbo
+    printf("pon rumbo = %d grados\n", deg);
 }
 
-void turtle_ponRumbo(int deg) {
-    printf("pon rumbo = %d grados\n", deg);
+void turtle_rumbo(void) {
+    printf("rumbo actual = %d grados\n", turtle_heading);
 }
 void turtle_retrocede(int d) {
     printf("retrocede %d unidades\n", d);

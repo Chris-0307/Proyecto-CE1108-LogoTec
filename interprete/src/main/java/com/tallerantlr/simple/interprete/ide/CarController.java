@@ -110,4 +110,48 @@ public class CarController {
         // Puedes mandar stop inmediato (fuera de la cola) o dentro del executor:
         executor.submit(() -> sendChar('S'));
     }
+    
+    
+    // === API de color (C R / C A / C N) y lápiz (P U / P D) ===
+
+    public void setColorRojo() {
+        executor.submit(() -> {
+            System.out.println("[CAR] color ROJO");
+            sendChar('C');
+            sendChar('R');   // CR = rojo
+        });
+    }
+
+    public void setColorAzul() {
+        executor.submit(() -> {
+            System.out.println("[CAR] color AZUL");
+            sendChar('C');
+            sendChar('A');   // CA = azul
+        });
+    }
+
+    public void setColorNegro() {
+        executor.submit(() -> {
+            System.out.println("[CAR] color NEGRO");
+            sendChar('C');
+            sendChar('N');   // CN = negro
+        });
+    }
+
+    public void lapizArriba() {
+        executor.submit(() -> {
+            System.out.println("[CAR] lápiz ARRIBA");
+            sendChar('P');
+            sendChar('U');   // PU = pen up
+        });
+    }
+
+    public void lapizAbajo() {
+        executor.submit(() -> {
+            System.out.println("[CAR] lápiz ABAJO");
+            sendChar('P');
+            sendChar('D');   // PD = pen down
+        });
+    }
+
 }
