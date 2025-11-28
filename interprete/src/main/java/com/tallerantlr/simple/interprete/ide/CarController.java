@@ -2,7 +2,6 @@ package com.tallerantlr.simple.interprete.ide;
 
 import com.fazecast.jSerialComm.SerialPort;
 
-import java.io.PrintStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -97,7 +96,6 @@ public class CarController {
     }
 
     public void esperaMs(int ms) {
-        // Si quisieras que la "espera" afecte al carrito también:
         executor.submit(() -> {
             System.out.println("[CAR] espera " + ms + " ms");
             try {
@@ -107,50 +105,49 @@ public class CarController {
     }
 
     public void detener() {
-        // Puedes mandar stop inmediato (fuera de la cola) o dentro del executor:
         executor.submit(() -> sendChar('S'));
     }
-    
-    
-    // === API de color (C R / C A / C N) y lápiz (P U / P D) ===
+
+
+    // === API de color / lápiz usando NÚMEROS ===
+    //  '1' = rojo + lápiz abajo
+    //  '2' = azul + lápiz abajo
+    //  '3' = negro + lápiz abajo
+    //  '4' = lápiz arriba (mantiene color)
+    //  '5' = lápiz abajo (mantiene color)
 
     public void setColorRojo() {
         executor.submit(() -> {
-            System.out.println("[CAR] color ROJO");
-            sendChar('C');
-            sendChar('R');   // CR = rojo
+            System.out.println("[CAR] color ROJO (cmd '1')");
+            sendChar('1');
         });
     }
 
     public void setColorAzul() {
         executor.submit(() -> {
-            System.out.println("[CAR] color AZUL");
-            sendChar('C');
-            sendChar('A');   // CA = azul
+            System.out.println("[CAR] color AZUL (cmd '2')");
+            sendChar('2');
         });
     }
 
     public void setColorNegro() {
         executor.submit(() -> {
-            System.out.println("[CAR] color NEGRO");
-            sendChar('C');
-            sendChar('N');   // CN = negro
+            System.out.println("[CAR] color NEGRO (cmd '3')");
+            sendChar('3');
         });
     }
 
     public void lapizArriba() {
         executor.submit(() -> {
-            System.out.println("[CAR] lápiz ARRIBA");
-            sendChar('P');
-            sendChar('U');   // PU = pen up
+            System.out.println("[CAR] lápiz ARRIBA (cmd '4')");
+            sendChar('4');
         });
     }
 
     public void lapizAbajo() {
         executor.submit(() -> {
-            System.out.println("[CAR] lápiz ABAJO");
-            sendChar('P');
-            sendChar('D');   // PD = pen down
+            System.out.println("[CAR] lápiz ABAJO (cmd '5')");
+            sendChar('5');
         });
     }
 
