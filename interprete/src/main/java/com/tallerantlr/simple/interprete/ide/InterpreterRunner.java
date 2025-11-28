@@ -59,79 +59,72 @@ public class InterpreterRunner {
             }
         });
     }
-
-    // ============================
-    //   Ejecutar (CORREGIDO)
-    // ============================
- // ========== NUEVO MÉTODO SOLO PARA VERIFICACIÓN ==========
+    
     public static void verifyCodeOnly(String source,
-                                      Consumer<String> err,
-                                      SyntaxErrorHandler handler) throws IOException {
+            Consumer<String> err,
+            SyntaxErrorHandler handler) throws IOException {
 
-        // Validación de comentarios (igual que en runFromString)
-        try (BufferedReader br = new BufferedReader(new StringReader(source))) {
-            String first = br.readLine();
-            if (first == null || !first.trim().startsWith("//")) {
-                throw new RuntimeException("Error: el código debe iniciar con un comentario en la primera línea.");
-            }
-        }
-        boolean hasAnyComment = false;
-        try (BufferedReader br = new BufferedReader(new StringReader(source))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.trim().startsWith("//")) { hasAnyComment = true; break; }
-            }
-        }
-        if (!hasAnyComment) {
-            throw new RuntimeException("Error: debe existir al menos un comentario en el programa.");
-        }
+// Validación de comentarios (igual que en runFromString)
+try (BufferedReader br = new BufferedReader(new StringReader(source))) {
+String first = br.readLine();
+if (first == null || !first.trim().startsWith("//")) {
+throw new RuntimeException("Error: el código debe iniciar con un comentario en la primera línea.");
+}
+}
+boolean hasAnyComment = false;
+try (BufferedReader br = new BufferedReader(new StringReader(source))) {
+String line;
+while ((line = br.readLine()) != null) {
+if (line.trim().startsWith("//")) { hasAnyComment = true; break; }
+}
+}
+if (!hasAnyComment) {
+throw new RuntimeException("Error: debe existir al menos un comentario en el programa.");
+}
 
-        // Configuración ANTLR
-        CharStream in = CharStreams.fromString(source);
-        SimpleLexer lexer = new SimpleLexer(in);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        SimpleParser parser = new SimpleParser(tokens);
+// Configuración ANTLR
+CharStream in = CharStreams.fromString(source);
+SimpleLexer lexer = new SimpleLexer(in);
+CommonTokenStream tokens = new CommonTokenStream(lexer);
+SimpleParser parser = new SimpleParser(tokens);
 
-        // --- IMPORTANTE: Configurar listeners para ABORTAR en error ---
-        setupErrorListeners(lexer, parser, err, handler, /*abortOnError*/ true);
+// Listeners: abortOnError = true
+setupErrorListeners(lexer, parser, err, handler, /*abortOnError*/ true);
 
-        // --- IMPORTANTE: Desactivar ejecución DENTRO del parser ---
-        parser.executeOnParse = false;
-        // --- Podríamos activar enforceVarDecl si queremos esa validación aquí ---
-        parser.enforceVarDecl = true; // O false si prefieres no forzarlo en la verificación
+// No ejecutar dentro del parser
+parser.executeOnParse = false;
+parser.enforceVarDecl = true; // o false si no quieres forzar HAZ aquí
 
-        // Entrypoint: program
-        try {
-            // --- SOLO PARSEAR ---
-            // Llamar a program() ejecutará el parseo y las validaciones semánticas
-            // que tengas DENTRO de las acciones de la gramática (como verificar proc duplicados).
-            // Si encuentra un error (léxico, sintáctico o una RuntimeException de tus acciones),
-            // los listeners configurados con abortOnError=true lanzarán una excepción.
-            parser.program();
+try {
+// SOLO parsear
+parser.program();
 
-            // --- VALIDACIÓN DE 'haz' (si enforceVarDecl es true) ---
-            if (parser.enforceVarDecl && parser.getHazCount() == 0) {
-                 throw new RuntimeException("Error: el programa debe declarar al menos una variable con 'Haz'.");
-            }
+// Validación 'haz'
+if (parser.enforceVarDecl && parser.getHazCount() == 0) {
+throw new RuntimeException("Error: el programa debe declarar al menos una variable con 'Haz'.");
+}
 
-            // --- NO EJECUTAMOS EL BUCLE 'for (ASTNode node : body)' ---
-            // Si llegamos aquí, significa que el parseo fue exitoso y las validaciones
-            // básicas (comentarios, haz) pasaron.
+} catch (SemanticError se) {
+// ⬅️ AQUÍ ES DONDE FALTABA LLAMAR AL HANDLER
+if (err != null) {
+err.accept(se.getMessage());
+}
+if (handler != null) {
+handler.onError(se.getLine(), se.getCharPos(), se.getMessage());
+}
+throw se; // para que MiniIDE pueda imprimir [VERIFY ERR] si quiere
+} catch (RuntimeException re) {
+// Errores léxicos/sintácticos ya activan el handler vía listeners,
+// pero por si acaso mostramos el mensaje:
+if (err != null && re.getMessage() != null) {
+err.accept(re.getMessage());
+}
+throw re;
+}
+}
+    
 
-        } catch (SemanticError se) {
-            // Los errores semánticos específicos lanzados por tus nodos AST NO se detectarán aquí
-            // porque no estamos ejecutando los nodos. Solo se detectarán errores lanzados
-            // durante el parseo o desde las acciones de la gramática.
-            // El listener ya debería haber reportado el error. Relanzamos para detener.
-            throw se;
-        } catch (RuntimeException re) {
-            // Captura errores léxicos/sintácticos (lanzados por los listeners)
-            // o RuntimeExceptions de las acciones de la gramática.
-            // El listener ya debería haber reportado el error. Relanzamos para detener.
-            throw re;
-        }
-        // Si no hubo excepciones, la verificación básica pasó.
-    }
+
     public static void runFromString(String source,
                                      MiniIDE.CanvasPanel canvas,
                                      TurtleState turtleState,

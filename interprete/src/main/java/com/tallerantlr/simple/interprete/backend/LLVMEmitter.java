@@ -209,19 +209,43 @@ public class LLVMEmitter {
                 }
                 continue;
             }
+            
             if (ins instanceof IRMove) {
                 IRMove m = (IRMove) ins;
+
+                // ===== Asignación a variable (global o local) =====
                 if (m.dst instanceof IRVar) {
                     String ptr = ptrOf((IRVar)m.dst);
-                    String v = asValue(m.src, VType.INT);
+
+                    // Miramos el tipo del RHS
+                    VType srcType = guessType(m.src);
+                    String v;
+
+                    if (srcType == VType.STR) {
+                        // src es una cadena → asValue genera un ptr (resultado de getelementptr)
+                        String p = asValue(m.src, VType.STR);   // p : ptr
+                        String tmpInt = fresh();                // tmpInt : i32
+
+                        // Convertimos el ptr a i32 para poder almacenarlo en la global i32
+                        sb.append("  ").append(tmpInt)
+                          .append(" = ptrtoint ptr ").append(p).append(" to i32\n");
+
+                        v = tmpInt;
+                    } else {
+                        // int/bool normales → como antes
+                        v = asValue(m.src, VType.INT);
+                    }
+
                     sb.append("  store i32 ").append(v).append(", ptr ").append(ptr).append("\n");
-                    } else if (m.dst instanceof IRTemp) {
+                }
+
+                // ===== Asignación a temporal SSA =====
+                else if (m.dst instanceof IRTemp) {
                     String dst = "%"+((IRTemp)m.dst).name;
                     VType vt = guessType(m.src);
                     String v  = asValue(m.src, vt);
 
                     if (vt == VType.BOOL) {
-                        // ✅ SOLO una instrucción con opcode
                         tempType.put(((IRTemp)m.dst).name, VType.BOOL);
                         sb.append("  ").append(dst).append(" = or i1 ").append(v).append(", false\n");
                     } else {
@@ -238,6 +262,8 @@ public class LLVMEmitter {
 
                 continue;
             }
+
+
             if (ins instanceof IRBinOpInstr) {
                 IRBinOpInstr b = (IRBinOpInstr) ins;
                 String dst = "%"+((IRTemp)b.dst).name;
@@ -452,6 +478,8 @@ public class LLVMEmitter {
     private String asValue(IRValue v, VType want) {
     	if (v instanceof IRConst) {
     	    Object o = ((IRConst)v).value;
+
+    	    // === Cadenas ===
     	    if (o instanceof String) {
     	        String s = (String) o;
     	        String sym = internString(s);   // ".strN"
@@ -463,9 +491,23 @@ public class LLVMEmitter {
     	          .append(sym).append(", i32 0, i32 0\n");
     	        return tmp; // ptr
     	    }
-            if (o instanceof Boolean) return ((Boolean)o) ? "true" : "false";
-            return String.valueOf(((Number)o).intValue());
-        }
+
+    	    // === Booleanos ===
+    	    if (o instanceof Boolean) {
+    	        boolean b = (Boolean) o;
+    	        if (want == VType.BOOL) {
+    	            // Cuando realmente queremos un i1 (icmp, and, or, println_bool, etc.)
+    	            return b ? "true" : "false";
+    	        } else {
+    	            // Cuando queremos un i32 (stores a globals, aritmética, etc.)
+    	            return b ? "1" : "0";
+    	        }
+    	    }
+
+    	    // === Números ===
+    	    return String.valueOf(((Number)o).intValue());
+    	}
+
         if (v instanceof IRTemp) {
             String n = "%"+((IRTemp)v).name;
             VType have = guessType(v);
